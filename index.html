@@ -4,19 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07080c">
-<title>EarPod ANC — Phase-Aligned Anti-Noise</title>
+<title>EarPod ANC — Device-Aware</title>
 <style>
   :root{
-    --bg:#07080c;
-    --panel:rgba(255,255,255,.045);
-    --panel2:rgba(255,255,255,.028);
-    --line:rgba(255,255,255,.09);
-    --txt:#e9edf4;
-    --dim:#7d8798;
-    --accent:#35e0a1;
-    --accent2:#22d3ee;
-    --warn:#ffb020;
-    --danger:#ff5a6a;
+    --bg:#07080c; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.028);
+    --line:rgba(255,255,255,.09); --txt:#e9edf4; --dim:#7d8798;
+    --accent:#35e0a1; --accent2:#22d3ee; --warn:#ffb020; --danger:#ff5a6a;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
@@ -28,15 +21,13 @@
       var(--bg);
     color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    display:flex;justify-content:center;
-    padding:20px 14px 44px;
-    min-height:100%;
+    display:flex;justify-content:center;padding:18px 14px 40px;min-height:100%;
     -webkit-font-smoothing:antialiased;
   }
-  .app{width:100%;max-width:470px;display:flex;flex-direction:column;gap:16px;}
+  .app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:14px;}
 
   header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;letter-spacing:.02em;}
+  .brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);transition:.3s;}
   .dot.on{background:var(--accent);box-shadow:0 0 12px 2px rgba(53,224,161,.6);}
   .status{
@@ -48,15 +39,40 @@
   .status.err{color:var(--danger);border-color:rgba(255,90,106,.35);background:rgba(255,90,106,.08);}
   .status.busy{color:var(--warn);border-color:rgba(255,176,32,.35);background:rgba(255,176,32,.08);}
 
+  .card{
+    display:flex;flex-direction:column;gap:12px;
+    padding:15px;border-radius:15px;border:1px solid var(--line);background:var(--panel);
+  }
+  .card h2{margin:0;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .pill{
+    font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
+    color:var(--accent);background:rgba(53,224,161,.09);
+    border:1px solid rgba(53,224,161,.25);padding:3px 9px;border-radius:999px;
+  }
+
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:10.5px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);}
+  select{
+    -webkit-appearance:none;appearance:none;
+    width:100%;padding:10px 32px 10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+    font-family:inherit;font-size:12.5px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 5l3 3 3-3' stroke='%237d8798' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 11px center;
+    cursor:pointer;
+  }
+  select:disabled{opacity:.45;cursor:not-allowed;}
+
   .power-wrap{display:flex;justify-content:center;padding:4px 0 0;}
   .power{
-    position:relative;width:150px;height:150px;border-radius:50%;
+    position:relative;width:140px;height:140px;border-radius:50%;
     border:1px solid var(--line);
     background:
       radial-gradient(circle at 50% 32%, rgba(255,255,255,.09), transparent 62%),
       linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
     color:var(--txt);cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     font-family:inherit;
     transition:transform .18s cubic-bezier(.2,.9,.3,1.3), box-shadow .35s, border-color .35s;
     box-shadow:0 18px 50px -18px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
@@ -73,17 +89,17 @@
     border:1px solid rgba(53,224,161,.5);animation:ripple 2.6s ease-out infinite;pointer-events:none;
   }
   @keyframes ripple{0%{transform:scale(1);opacity:.7;}100%{transform:scale(1.42);opacity:0;}}
-  .power-icon{font-size:38px;line-height:1;transition:.3s;opacity:.85;}
+  .power-icon{font-size:36px;line-height:1;transition:.3s;opacity:.85;}
   .power.on .power-icon{color:var(--accent);opacity:1;filter:drop-shadow(0 0 14px rgba(53,224,161,.75));}
   .power-label{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);transition:.3s;}
   .power.on .power-label{color:var(--accent);}
 
   .meters{
-    display:flex;flex-direction:column;gap:10px;
-    padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);
+    display:flex;flex-direction:column;gap:9px;
+    padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:var(--panel);
   }
   .meter-row{display:flex;align-items:center;gap:11px;}
-  .meter-label{width:80px;flex:none;font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+  .meter-label{width:82px;flex:none;font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
   .meter{flex:1;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.055);box-shadow:inset 0 1px 2px rgba(0,0,0,.5);}
   .fill{height:100%;width:0%;border-radius:99px;}
   .fill.in{background:linear-gradient(90deg,#2a6cff,#22d3ee);}
@@ -91,36 +107,10 @@
   .guard{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);opacity:0;transition:.2s;font-weight:700;text-align:center;}
   .guard.show{opacity:1;}
 
-  .card{
-    display:flex;flex-direction:column;gap:13px;
-    padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);
-  }
-  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .card h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
-  .pill{
-    font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
-    color:var(--accent);background:rgba(53,224,161,.09);
-    border:1px solid rgba(53,224,161,.25);
-    padding:3px 9px;border-radius:999px;letter-spacing:.02em;
-  }
-  .hint{margin:0;font-size:11.5px;line-height:1.5;color:var(--dim);}
-
-  .row{display:flex;align-items:center;gap:10px;}
-  .row2{display:flex;gap:9px;flex-wrap:wrap;}
-
-  .step{
-    width:34px;height:34px;flex:none;border-radius:50%;
-    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
-    font-size:17px;line-height:1;font-family:inherit;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    transition:.15s;user-select:none;
-  }
-  .step:hover{background:rgba(255,255,255,.09);}
-  .step:active{transform:scale(.9);}
-
+  .row{display:flex;gap:8px;flex-wrap:wrap;}
   .btn{
-    flex:1;min-width:120px;
-    padding:10px 14px;border-radius:11px;
+    flex:1;min-width:110px;
+    padding:10px 12px;border-radius:10px;
     border:1px solid var(--line);background:var(--panel2);color:var(--txt);
     font-size:12px;font-weight:650;font-family:inherit;letter-spacing:.03em;
     cursor:pointer;transition:.15s;user-select:none;
@@ -128,22 +118,13 @@
   }
   .btn:hover{background:rgba(255,255,255,.08);}
   .btn:active{transform:scale(.97);}
-  .btn.on{
-    border-color:rgba(53,224,161,.5);
-    background:rgba(53,224,161,.12);
-    color:var(--accent);
-  }
-  .btn.warn{
-    border-color:rgba(255,90,106,.5);
-    background:rgba(255,90,106,.12);
-    color:var(--danger);
-    animation:pulse 1.1s ease-in-out infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.62;}}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.on{border-color:rgba(53,224,161,.5);background:rgba(53,224,161,.12);color:var(--accent);}
+  .btn.warn{border-color:rgba(255,90,106,.5);background:rgba(255,90,106,.12);color:var(--danger);}
+  .btn.amber{border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.12);color:var(--warn);}
 
   input[type=range]{
-    -webkit-appearance:none;appearance:none;
-    width:100%;height:22px;background:transparent;cursor:pointer;margin:0;
+    -webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0;
   }
   input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
   input[type=range]::-webkit-slider-thumb{
@@ -155,47 +136,40 @@
   }
   input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18);}
   input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
-  input[type=range]::-moz-range-thumb{
-    width:18px;height:18px;border-radius:50%;
-    background:#eafff7;border:1px solid rgba(53,224,161,.8);
-    box-shadow:0 0 14px rgba(53,224,161,.5);
-  }
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#eafff7;border:1px solid rgba(53,224,161,.8);box-shadow:0 0 14px rgba(53,224,161,.5);}
 
-  .ctrl{display:flex;flex-direction:column;gap:8px;}
+  .ctrl{display:flex;flex-direction:column;gap:7px;}
   .ctrl-head{display:flex;align-items:baseline;justify-content:space-between;}
-  .ctrl-name{font-size:12.5px;font-weight:600;letter-spacing:.02em;}
+  .ctrl-name{font-size:12.5px;font-weight:600;}
   .ctrl-val{font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:650;}
   .ctrl-hint{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:-2px;}
 
-  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .toggle{
-    position:relative;width:44px;height:26px;flex:none;border-radius:99px;
-    border:1px solid var(--line);background:rgba(255,255,255,.06);
-    cursor:pointer;transition:.22s;padding:0;
+  .diag{
+    font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;
+    line-height:1.7;
   }
-  .toggle::after{
-    content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-    background:#8a94a5;transition:.22s;
-  }
-  .toggle.on{background:rgba(53,224,161,.2);border-color:rgba(53,224,161,.5);}
-  .toggle.on::after{left:20px;background:var(--accent);box-shadow:0 0 12px rgba(53,224,161,.7);}
+  .diag b{color:#c9d2df;font-weight:600;}
 
-  details.help{border-radius:16px;border:1px solid var(--line);background:var(--panel);overflow:hidden;}
+  details.help{border-radius:14px;border:1px solid var(--line);background:var(--panel);overflow:hidden;}
   details.help summary{
-    cursor:pointer;list-style:none;padding:14px 16px;
-    font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);
+    cursor:pointer;list-style:none;padding:13px 15px;
+    font-size:11.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
     display:flex;align-items:center;justify-content:space-between;
   }
   details.help summary::-webkit-details-marker{display:none;}
   details.help summary::after{content:"+";font-size:16px;color:var(--dim);}
   details.help[open] summary::after{content:"–";}
-  .help-body{padding:0 16px 16px;font-size:12.5px;line-height:1.62;color:#b9c2d0;}
-  .help-body h4{margin:14px 0 6px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);}
-  .help-body h4:first-child{margin-top:4px;}
+  .help-body{padding:0 15px 15px;font-size:12.5px;line-height:1.6;color:#b9c2d0;}
+  .help-body h4{margin:13px 0 5px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);}
+  .help-body h4:first-child{margin-top:3px;}
   .help-body ol,.help-body ul{margin:0;padding-left:18px;}
-  .help-body li{margin-bottom:5px;}
+  .help-body li{margin-bottom:4px;}
   .help-body code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px;font-size:11.5px;color:#dbe3ee;}
-  .lat{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;}
+  .callout{
+    margin-top:10px;padding:10px 11px;border-radius:9px;
+    background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.22);
+    font-size:11.5px;line-height:1.5;color:#e8c987;
+  }
 </style>
 </head>
 <body>
@@ -206,6 +180,30 @@
     <div class="status" id="status">Idle</div>
   </header>
 
+  <section class="card">
+    <div class="card-head">
+      <h2>Devices</h2>
+      <span class="pill" id="permPill">no access</span>
+    </div>
+    <div class="field">
+      <label for="micSelect">Microphone (input)</label>
+      <select id="micSelect" disabled>
+        <option>— tap Enable to list mics —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="outSelect">Output (where anti-noise plays)</label>
+      <select id="outSelect" disabled>
+        <option>— tap Enable to list outputs —</option>
+      </select>
+    </div>
+    <div class="row">
+      <button class="btn" id="enableBtn">Enable &amp; list devices</button>
+      <button class="btn" id="refreshBtn" disabled>Refresh</button>
+    </div>
+    <div class="ctrl-hint">Pick your earbuds' mic here, and your earbuds as output. If earbuds only appear under "Headset", that's the mic-enabled mode — output quality will drop to call quality. That's a Bluetooth limitation, not a bug.</div>
+  </section>
+
   <div class="power-wrap">
     <button class="power" id="power" aria-pressed="false">
       <span class="power-icon">⏻</span>
@@ -213,140 +211,121 @@
     </button>
   </div>
 
+  <div class="row">
+    <button class="btn" id="monitorBtn" disabled>🎧 Monitor raw mic (test)</button>
+  </div>
+
   <div class="meters">
     <div class="meter-row">
-      <span class="meter-label">Room</span>
+      <span class="meter-label">Mic in</span>
       <div class="meter"><div class="fill in" id="inFill"></div></div>
     </div>
     <div class="meter-row">
       <span class="meter-label">Anti-noise</span>
       <div class="meter"><div class="fill out" id="outFill"></div></div>
     </div>
-    <div class="guard" id="guard">⚠ feedback guard active</div>
+    <div class="guard" id="guard">⚠ feedback guard active — lower depth</div>
   </div>
-
-  <section class="card">
-    <div class="card-head">
-      <h2>Phase alignment</h2>
-      <span class="pill" id="delayReadout">0.00 ms</span>
-    </div>
-    <p class="hint">The anti-noise must land at your ear <b>at the same instant</b> as the noise. Browser latency makes it arrive late — this slides the reference back so the two line up. Sweep until the rumble goes quietest. If it sounds hollow or louder, you've gone past the sweet spot.</p>
-    <div class="row">
-      <button class="step" id="stepDown" aria-label="Decrease delay">−</button>
-      <input type="range" id="delay" min="0" max="800" value="0" step="1">
-      <button class="step" id="stepUp" aria-label="Increase delay">+</button>
-    </div>
-    <div class="row2">
-      <button class="btn on" id="polarity">Polarity: − (inverted)</button>
-      <button class="btn" id="autoAlign">Auto-align</button>
-    </div>
-    <p class="hint" id="predictHint">Fine-tune with the − / + buttons. Keyboard ← → also works (hold Shift for coarse).</p>
-  </section>
 
   <section class="card">
     <h2>Cancellation</h2>
     <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Depth</span>
-        <span class="ctrl-val" id="depthVal">80%</span>
-      </div>
+      <div class="ctrl-head"><span class="ctrl-name">Depth</span><span class="ctrl-val" id="depthVal">80%</span></div>
       <input type="range" id="depth" min="0" max="100" value="80" step="1">
-      <div class="ctrl-hint">How hard the anti-noise pushes. Push until the rumble drops, then stop — past the sweet spot it gets hollow and louder.</div>
+      <div class="ctrl-hint">How hard the anti-noise pushes. If it sounds hollow or louder, back off.</div>
     </div>
     <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Tone / band</span>
-        <span class="ctrl-val" id="toneVal">950 Hz</span>
-      </div>
+      <div class="ctrl-head"><span class="ctrl-name">Tone / band</span><span class="ctrl-val" id="toneVal">900 Hz</span></div>
       <input type="range" id="tone" min="0" max="100" value="50" step="1">
-      <div class="ctrl-hint">Low = pure rumble killing. High = wider band, but phase error above ~1 kHz makes it sound phasey and can add noise.</div>
+      <div class="ctrl-hint">Low = only kills deep rumble. High = wider band, but sounds phasey because timing error grows with frequency.</div>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-head"><span class="ctrl-name">Masking bed</span><span class="ctrl-val" id="maskVal">Off</span></div>
+      <input type="range" id="mask" min="0" max="100" value="0" step="1">
+      <div class="ctrl-hint">Soft brown noise. Hides what ANC can't cancel (voices, clatter).</div>
     </div>
   </section>
 
   <section class="card">
-    <h2>Advanced</h2>
-    <div class="toggle-row">
-      <div>
-        <div class="ctrl-name">Predictive mode</div>
-        <div class="ctrl-hint" style="margin-top:3px">Learns steady tones (fans, engines) and forecasts them forward, beating the latency. Auto-fades out when the noise is too random to predict.</div>
-      </div>
-      <button class="toggle on" id="predict" aria-label="Toggle predictive mode"></button>
-    </div>
-    <div class="ctrl" id="lookaheadCtrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Look-ahead</span>
-        <span class="ctrl-val" id="lookaheadVal">8.0 ms</span>
-      </div>
-      <input type="range" id="lookahead" min="0" max="800" value="160" step="1">
-      <div class="ctrl-hint">How far ahead the predictor forecasts. Set it to roughly your browser's round-trip latency (see readout below).</div>
-    </div>
+    <h2>Alignment</h2>
     <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Masking bed</span>
-        <span class="ctrl-val" id="maskVal">Off</span>
-      </div>
-      <input type="range" id="mask" min="0" max="100" value="0" step="1">
-      <div class="ctrl-hint">Soft brown noise that hides what ANC physically can't cancel (voices, clatter). Off by default.</div>
+      <div class="ctrl-head"><span class="ctrl-name">Delay</span><span class="ctrl-val" id="delayVal">0.0 ms</span></div>
+      <input type="range" id="delay" min="0" max="4000" value="0" step="1">
+      <div class="ctrl-hint">Slides the anti-noise in time so it lands with the noise. Use <b>Monitor raw mic</b> below to measure your real latency first — then set this close to that.</div>
+    </div>
+    <div class="row">
+      <button class="btn on" id="polarity">Polarity: − (inverted)</button>
+      <button class="btn" id="autoAlign">Auto-align sweep</button>
+    </div>
+    <div class="row">
+      <button class="btn on" id="predict">Predictive: on</button>
+    </div>
+    <div class="ctrl" id="lookaheadWrap">
+      <div class="ctrl-head"><span class="ctrl-name">Look-ahead</span><span class="ctrl-val" id="lookaheadVal">120 ms</span></div>
+      <input type="range" id="lookahead" min="0" max="4000" value="120" step="1">
+      <div class="ctrl-hint">How far ahead to forecast steady noise. Set this to <b>your measured round-trip latency</b>. Only works on periodic noise (fans, engines).</div>
     </div>
   </section>
 
-  <details class="help">
-    <summary>How to actually make it work</summary>
-    <div class="help-body">
-      <h4>The setup that matters</h4>
-      <ol>
-        <li><b>Connect your earbuds first</b>, then open this page. The browser picks the audio output at start.</li>
-        <li><b>Put the mic closer to the noise than your ears are.</b> Phone on the desk next to the fan / AC / window, not in your hand next to your head. The mic samples the noise, this page inverts it, and the earbuds fire the anti-noise into your ear where it meets the real noise.</li>
-        <li>Keep the page open and the screen on. Tap the button once and allow microphone access.</li>
-      </ol>
+  <section class="card">
+    <h2>Diagnostics</h2>
+    <div class="diag" id="diag">Not running.</div>
+  </section>
 
-      <h4>Why timing was off, and what changed</h4>
-      <ul>
-        <li>The old version used a biquad lowpass, which adds <b>frequency-dependent group delay</b> — it smeared the phase and made the anti-noise arrive at the wrong time for different frequencies. That's gone; it's a linear-phase FIR now, so all frequencies are delayed by the same fixed amount.</li>
-        <li>The whole chain is now an <b>AudioWorklet</b> — no graph node scheduling jitter, no hidden buffering, sample-accurate.</li>
-        <li>The browser is asked for the <b>smallest possible buffer</b> (<code>latencyHint: 0</code>).</li>
-        <li>You now have a <b>delay line</b> (0–40 ms, 0.05 ms steps) to manually compensate the remaining latency, plus a <b>polarity flip</b> for when the error is near 180°.</li>
-        <li><b>Predictive mode</b> trains an LMS filter on the mic signal and forecasts it forward by your chosen look-ahead — this is the only way to beat latency for steady, periodic noise, because it literally predicts the future waveform.</li>
-      </ul>
+  <details class="help">
+    <summary>Read this — it explains the echo you're hearing</summary>
+    <div class="help-body">
+
+      <h4>Why you hear an echo, not silence</h4>
+      <p>Active noise cancellation works by playing <i>sound that is the exact inverse of the noise, at the exact same instant</i>. The two waveforms add to zero. If the anti-noise arrives even 1 ms late, it stops cancelling and starts sounding like a slap-back echo. If it arrives very late (which is what Bluetooth does), you hear a clean but delayed copy — which is exactly what you described.</p>
+      <p>Real ANC chips inside earbuds run at about <b>0.05 milliseconds</b> of latency. Bluetooth adds <b>150–300 ms</b>. A browser adds another <b>10–50 ms</b>. That is 3000–7000× too slow to cancel a waveform directly.</p>
+
+      <div class="callout">
+        <b>The only thing that actually works in a browser:</b> predicting periodic noise. If a fan spins at a steady rate, we can learn its pattern and forecast it forward by the exact amount of your latency. That's what <b>Predictive: on</b> does. For non-periodic noise (talking, doors, claps), nothing in software can cancel it — the wave is already gone before we can react.
+      </div>
+
+      <h4>Steps, in order</h4>
+      <ol>
+        <li>Connect your earbuds. In the <b>Devices</b> card above, tap <b>Enable &amp; list devices</b> and allow mic access.</li>
+        <li>Pick your <b>earbuds mic</b> in the first dropdown. If your earbuds appear as two entries, pick the one that says "Headset" — that's the one that has the mic.</li>
+        <li>Pick your <b>earbuds</b> in the output dropdown (Chrome/Edge only — Safari ignores this).</li>
+        <li>Tap the big power button. It will start the ANC engine using your selected devices.</li>
+        <li>Now tap <b>Monitor raw mic</b>. This plays the mic straight to your ears with <i>no processing at all</i>. <b>Clap once.</b> Whatever delay you hear in the monitor is your true round-trip latency. That's your target number.</li>
+        <li>Turn <b>Monitor</b> off. Set the <b>Look-ahead</b> slider to that number. Set <b>Depth</b> around 60–80%. Set <b>Tone</b> low (deep rumble) if you're cancelling a fan.</li>
+        <li>Point the mic at the fan / AC and listen. If it gets quieter, you're done. If it gets louder or hollow, lower Depth or nudge Delay.</li>
+      </ol>
 
       <h4>What it can and can't kill</h4>
       <ul>
-        <li><b>Kills well:</b> fans, AC hum, engine drone, road rumble, transformer hum, airplane cabin — steady low-frequency stuff.</li>
-        <li><b>Won't kill:</b> speech, clatter, doors, sharp transients. That's physics, not a bug in the code.</li>
+        <li><b>Kills (with prediction):</b> steady fan, AC hum, engine drone, transformer hum, airplane cabin drone.</li>
+        <li><b>Won't kill — will echo:</b> speech, music, clatter, doors, footsteps, any sudden sound.</li>
       </ul>
 
-      <h4>Order of tuning</h4>
-      <ol>
-        <li>Start with <b>Depth 80%</b>, <b>Tone ~950 Hz</b>, <b>delay 0</b>, <b>polarity −</b>.</li>
-        <li>Tap <b>Auto-align</b>. It sweeps the delay up and down. Tap <b>LOCK</b> the moment the rumble drops away.</li>
-        <li>Fine-tune with the − / + buttons and the arrow keys.</li>
-        <li>If the low rumble is steady (fan, engine), turn <b>Predictive mode</b> on and set <b>Look-ahead</b> to roughly the round-trip latency shown at the bottom of this panel.</li>
-        <li>If the room gets <i>louder</i> or hollow, you've pushed Depth or delay too far — back it down.</li>
-      </ol>
+      <h4>If you hear a 10-second echo again</h4>
+      <p>That's not the ANC — that's a buffering / acoustic loop problem:</p>
+      <ul>
+        <li>Make sure the earbuds are in your ears and the phone is <b>not</b> on speaker.</li>
+        <li>Turn off the earbuds' own "transparency" / "awareness" mode if they have one — it monitors the room and feeds it back with its own delay.</li>
+        <li>Make sure <b>Monitor raw mic</b> is off. Leaving it on gives you a permanent 100–300 ms echo of everything.</li>
+        <li>Close other apps that use the mic (voice chat, recording).</li>
+      </ul>
 
-      <h4>If you hear howling</h4>
-      <p>Lower Depth, or move the mic away from the earbuds. The feedback guard auto-ducks the output if it detects a runaway loop, but don't rely on it.</p>
-
-      <div class="lat" id="lat">Latency readout: —</div>
     </div>
   </details>
 
 </div>
 
-<!-- ============================================================
-     AudioWorklet processor — must not contain the string "</script>"
-     ============================================================ -->
 <script id="anc-worklet" type="javascript/worker">
 class ANCProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
-      { name: 'depth',     defaultValue: 0.8, minValue: 0, maxValue: 2,     automationRate: 'k-rate' },
-      { name: 'delay',     defaultValue: 0,   minValue: 0, maxValue: 96000, automationRate: 'k-rate' },
-      { name: 'polarity',  defaultValue: -1,  minValue: -1, maxValue: 1,    automationRate: 'k-rate' },
-      { name: 'mask',      defaultValue: 0,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' },
-      { name: 'predict',   defaultValue: 0,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' },
-      { name: 'lookahead', defaultValue: 0,   minValue: 0, maxValue: 96000, automationRate: 'k-rate' },
-      { name: 'enabled',   defaultValue: 1,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' }
+      { name:'depth',     defaultValue:0.8, minValue:0, maxValue:2,   automationRate:'k-rate' },
+      { name:'delay',     defaultValue:0,   minValue:0, maxValue:96000, automationRate:'k-rate' },
+      { name:'polarity',  defaultValue:-1,  minValue:-1, maxValue:1,  automationRate:'k-rate' },
+      { name:'mask',      defaultValue:0,   minValue:0, maxValue:1,   automationRate:'k-rate' },
+      { name:'predict',   defaultValue:1,   minValue:0, maxValue:1,   automationRate:'k-rate' },
+      { name:'lookahead', defaultValue:0,   minValue:0, maxValue:96000, automationRate:'k-rate' },
+      { name:'enabled',   defaultValue:1,   minValue:0, maxValue:1,   automationRate:'k-rate' }
     ];
   }
 
@@ -354,43 +333,42 @@ class ANCProcessor extends AudioWorkletProcessor {
     super();
     this.sr = sampleRate;
 
-    /* ---- linear-phase FIR (fixed length, only coefficients change) ---- */
+    /* linear-phase FIR, 33 taps → 16-sample group delay */
     this.firLen = 33;
     this.fir = new Float32Array(this.firLen);
-    this.fir[(this.firLen - 1) >> 1] = 1;          // default: passthrough
+    this.fir[(this.firLen-1)>>1] = 1;
     this.firHist = new Float32Array(this.firLen);
     this.firIdx = 0;
 
-    /* ---- fractional delay line (2 s max) ---- */
+    /* delay line, 2 s */
     this.dlLen = Math.ceil(this.sr * 2);
     this.dl = new Float32Array(this.dlLen);
     this.dlWrite = 0;
 
-    /* ---- masking noise state ---- */
-    this.brown = 0;
-
-    /* ---- feedback guard ---- */
-    this.env = 0;
-    this.gain = 1;
-
-    /* ---- NLMS predictor ---- */
-    this.lmsLen = 192;
+    /* NLMS predictor */
+    this.lmsLen = 256;
     this.lmsW = new Float32Array(this.lmsLen);
-    this.lmsBufLen = 4096;
+    this.lmsBufLen = 8192;
     this.lmsBuf = new Float32Array(this.lmsBufLen);
     this.lmsIdx = 0;
-    this.lmsMu = 0.30;
-    this.lmsLeak = 0.99995;
+    this.lmsMu = 0.25;
+    this.lmsLeak = 0.9999;
     this.powEnv = 1e-6;
     this.errPow = 0;
     this.sigPow = 0;
     this.conf = 0;
 
-    /* ---- metering ---- */
+    /* feedback guard */
+    this.env = 0;
+    this.gain = 1;
+
+    /* masking */
+    this.brown = 0;
+
+    /* metering */
     this.sumIn = 0;
     this.sumOut = 0;
     this.meterCount = 0;
-    this.meterBlocks = 8;
 
     this.port.onmessage = (ev) => {
       const d = ev.data;
@@ -400,265 +378,266 @@ class ANCProcessor extends AudioWorkletProcessor {
         if (c.length === this.firLen) this.fir = c;
       } else if (d.type === 'reset') {
         this.lmsW.fill(0);
-        this.powEnv = 1e-6;
-        this.errPow = 0;
-        this.sigPow = 0;
-        this.conf = 0;
+        this.powEnv = 1e-6; this.errPow = 0; this.sigPow = 0; this.conf = 0;
       }
     };
   }
 
   process(inputs, outputs, params) {
     const output = outputs[0];
-    if (!output || output.length === 0) return true;
-
+    if (!output || !output.length) return true;
     const out = output[0];
     const n = out.length;
     const input = inputs[0];
-    const inCh = (input && input.length > 0 && input[0]) ? input[0] : null;
+    const inCh = (input && input.length && input[0]) ? input[0] : null;
 
     const depth     = params.depth[0];
-    const dlyRaw    = params.delay[0];
+    const dly       = Math.min(Math.max(0, params.delay[0]), this.dlLen - 2);
     const polarity  = params.polarity[0];
     const maskAmt   = params.mask[0];
     const predictOn = params.predict[0] > 0.5;
-    const laRaw     = params.lookahead[0];
+    const la        = Math.min(Math.max(0, Math.round(params.lookahead[0])), this.lmsBufLen - this.lmsLen - 2);
     const enabled   = params.enabled[0] > 0.5;
 
-    if (!enabled) {
-      for (let i = 0; i < n; i++) out[i] = 0;
-      return true;
-    }
+    if (!enabled) { for (let i=0;i<n;i++) out[i]=0; return true; }
 
-    /* local bindings for speed */
-    const firLen   = this.firLen;
-    const fir      = this.fir;
-    const firHist  = this.firHist;
-    const dl       = this.dl;
-    const dlLen    = this.dlLen;
-    const dly      = Math.min(Math.max(0, dlyRaw), dlLen - 2);
+    const firLen=this.firLen, fir=this.fir, firHist=this.firHist;
+    const dl=this.dl, dlLen=this.dlLen;
+    const lmsLen=this.lmsLen, lmsW=this.lmsW, lmsBuf=this.lmsBuf, lmsBufLen=this.lmsBufLen;
+    const lmsMu=this.lmsMu, lmsLeak=this.lmsLeak;
 
-    const lmsLen     = this.lmsLen;
-    const lmsW       = this.lmsW;
-    const lmsBuf     = this.lmsBuf;
-    const lmsBufLen  = this.lmsBufLen;
-    const la         = Math.min(Math.max(0, Math.round(laRaw)), lmsBufLen - lmsLen - 2);
-    const lmsMu      = this.lmsMu;
-    const lmsLeak    = this.lmsLeak;
-
-    for (let i = 0; i < n; i++) {
+    for (let i=0;i<n;i++) {
       const x = inCh ? inCh[i] : 0;
 
-      /* ---------- 1. linear-phase FIR lowpass ---------- */
+      /* FIR lowpass */
       firHist[this.firIdx] = x;
-      let y = 0;
-      let fi = this.firIdx;
-      for (let k = 0; k < firLen; k++) {
-        y += fir[k] * firHist[fi];
-        fi--;
-        if (fi < 0) fi = firLen - 1;
-      }
-      this.firIdx++;
-      if (this.firIdx >= firLen) this.firIdx = 0;
+      let y = 0, fi = this.firIdx;
+      for (let k=0;k<firLen;k++) { y += fir[k]*firHist[fi]; fi--; if (fi<0) fi=firLen-1; }
+      this.firIdx++; if (this.firIdx>=firLen) this.firIdx=0;
 
-      /* ---------- 2. fractional delay line ---------- */
+      /* fractional delay */
       dl[this.dlWrite] = y;
       let rp = this.dlWrite - dly;
       while (rp < 0) rp += dlLen;
-      const i0 = Math.floor(rp);
-      const frac = rp - i0;
-      const i0m = i0 % dlLen;
-      const i1m = (i0m + 1) % dlLen;
-      const delayed = dl[i0m] + (dl[i1m] - dl[i0m]) * frac;
-      this.dlWrite++;
-      if (this.dlWrite >= dlLen) this.dlWrite = 0;
+      const i0 = Math.floor(rp), frac = rp - i0;
+      const a = dl[i0 % dlLen], b = dl[(i0+1) % dlLen];
+      const delayed = a + (b - a) * frac;
+      this.dlWrite++; if (this.dlWrite>=dlLen) this.dlWrite=0;
 
-      /* ---------- 3. predictive branch ---------- */
+      /* predict */
       let advanced = delayed;
       if (predictOn) {
         lmsBuf[this.lmsIdx] = y;
 
-        /* --- train: predict y(t) from y(t-la-1 ... t-la-L) --- */
-        let pred = 0;
-        let bi = this.lmsIdx - la - 1;
-        bi %= lmsBufLen;
-        if (bi < 0) bi += lmsBufLen;
-        for (let k = 0; k < lmsLen; k++) {
-          pred += lmsW[k] * lmsBuf[bi];
-          bi--;
-          if (bi < 0) bi += lmsBufLen;
-        }
+        let pred = 0, bi = this.lmsIdx - la - 1;
+        bi %= lmsBufLen; if (bi < 0) bi += lmsBufLen;
+        for (let k=0;k<lmsLen;k++) { pred += lmsW[k]*lmsBuf[bi]; bi--; if (bi<0) bi+=lmsBufLen; }
         const err = y - pred;
 
-        /* global-power normalised step (cheap, stable) */
-        this.powEnv = this.powEnv * 0.999 + y * y * 0.001;
-        const step = lmsMu / (this.powEnv * lmsLen + 1e-9);
+        this.powEnv = this.powEnv*0.999 + y*y*0.001;
+        const step = lmsMu / (this.powEnv*lmsLen + 1e-9);
 
-        /* update with leakage */
         let bj = this.lmsIdx - la - 1;
-        bj %= lmsBufLen;
-        if (bj < 0) bj += lmsBufLen;
-        for (let k = 0; k < lmsLen; k++) {
-          lmsW[k] = (lmsW[k] + step * err * lmsBuf[bj]) * lmsLeak;
-          bj--;
-          if (bj < 0) bj += lmsBufLen;
+        bj %= lmsBufLen; if (bj < 0) bj += lmsBufLen;
+        for (let k=0;k<lmsLen;k++) {
+          lmsW[k] = (lmsW[k] + step*err*lmsBuf[bj]) * lmsLeak;
+          bj--; if (bj<0) bj+=lmsBufLen;
         }
 
-        /* confidence: how predictable is this signal? */
-        this.errPow = this.errPow * 0.999 + err * err * 0.001;
-        this.sigPow = this.sigPow * 0.999 + y * y * 0.001;
-        let c = 1 - this.errPow / (this.sigPow + 1e-9);
-        if (c < 0) c = 0; else if (c > 1) c = 1;
-        this.conf = this.conf * 0.99 + c * 0.01;
+        this.errPow = this.errPow*0.999 + err*err*0.001;
+        this.sigPow = this.sigPow*0.999 + y*y*0.001;
+        let c = 1 - this.errPow/(this.sigPow + 1e-9);
+        if (c<0) c=0; else if (c>1) c=1;
+        this.conf = this.conf*0.99 + c*0.01;
 
-        /* --- forecast y(t+la) from y(t-1 ... t-L) --- */
-        let ahead = 0;
-        let bk = this.lmsIdx - 1;
-        bk %= lmsBufLen;
-        if (bk < 0) bk += lmsBufLen;
-        for (let k = 0; k < lmsLen; k++) {
-          ahead += lmsW[k] * lmsBuf[bk];
-          bk--;
-          if (bk < 0) bk += lmsBufLen;
-        }
+        let ahead = 0, bk = this.lmsIdx - 1;
+        bk %= lmsBufLen; if (bk<0) bk += lmsBufLen;
+        for (let k=0;k<lmsLen;k++) { ahead += lmsW[k]*lmsBuf[bk]; bk--; if (bk<0) bk+=lmsBufLen; }
 
-        /* blend: confident → use forecast; unsure → fall back to direct */
         advanced = ahead * this.conf + delayed * (1 - this.conf);
 
-        this.lmsIdx++;
-        if (this.lmsIdx >= lmsBufLen) this.lmsIdx = 0;
+        this.lmsIdx++; if (this.lmsIdx>=lmsBufLen) this.lmsIdx=0;
       }
 
-      /* ---------- 4. invert + depth ---------- */
       let sig = advanced * polarity * depth;
 
-      /* ---------- 5. feedback guard ---------- */
-      const a = sig < 0 ? -sig : sig;
-      this.env = a > this.env ? a : this.env * 0.9995;
+      /* feedback guard */
+      const ab = sig<0?-sig:sig;
+      this.env = ab > this.env ? ab : this.env*0.9995;
       if (this.env > 0.4) {
-        const target = 0.4 / this.env;
-        this.gain += (target - this.gain) * 0.02;
+        const tgt = 0.4/this.env;
+        this.gain += (tgt - this.gain)*0.02;
       } else {
-        this.gain += (1 - this.gain) * 0.0005;
+        this.gain += (1 - this.gain)*0.0005;
       }
       sig *= this.gain;
 
-      /* ---------- 6. masking bed ---------- */
       if (maskAmt > 0) {
-        const white = Math.random() * 2 - 1;
-        this.brown = (this.brown + 0.02 * white) / 1.02;
+        const w = Math.random()*2 - 1;
+        this.brown = (this.brown + 0.02*w) / 1.02;
         sig += this.brown * 3.2 * maskAmt * 0.22;
       }
 
-      /* ---------- 7. soft clip ---------- */
-      if (sig > 0.98) sig = 0.98;
-      else if (sig < -0.98) sig = -0.98;
-
+      if (sig > 0.98) sig = 0.98; else if (sig < -0.98) sig = -0.98;
       out[i] = sig;
 
-      /* ---------- metering ---------- */
-      this.sumIn += x * x;
-      this.sumOut += sig * sig;
-      this.meterCount++;
+      this.sumIn += x*x; this.sumOut += sig*sig; this.meterCount++;
     }
 
-    if (this.meterCount >= this.meterBlocks * n) {
-      const rIn = Math.sqrt(this.sumIn / this.meterCount);
+    if (this.meterCount >= 8*n) {
+      const rIn  = Math.sqrt(this.sumIn  / this.meterCount);
       const rOut = Math.sqrt(this.sumOut / this.meterCount);
-      this.port.postMessage({
-        type: 'levels',
-        in: rIn,
-        out: rOut,
-        duck: this.gain,
-        conf: this.conf
-      });
-      this.sumIn = 0;
-      this.sumOut = 0;
-      this.meterCount = 0;
+      this.port.postMessage({ type:'levels', in:rIn, out:rOut, duck:this.gain, conf:this.conf });
+      this.sumIn = 0; this.sumOut = 0; this.meterCount = 0;
     }
-
     return true;
   }
 }
-
 registerProcessor('anc-processor', ANCProcessor);
 </script>
 
 <script>
 (function () {
   'use strict';
-
   const $ = (id) => document.getElementById(id);
   const el = {
-    power: $('power'), powerLabel: $('powerLabel'), dot: $('dot'), status: $('status'),
-    inFill: $('inFill'), outFill: $('outFill'), guard: $('guard'),
-    depth: $('depth'), depthVal: $('depthVal'),
-    tone: $('tone'), toneVal: $('toneVal'),
-    mask: $('mask'), maskVal: $('maskVal'),
-    delay: $('delay'), delayReadout: $('delayReadout'),
-    stepDown: $('stepDown'), stepUp: $('stepUp'),
-    polarity: $('polarity'),
-    autoAlign: $('autoAlign'),
-    predict: $('predict'), lookahead: $('lookahead'), lookaheadVal: $('lookaheadVal'),
-    predictHint: $('predictHint'),
-    lat: $('lat')
+    dot:$('dot'), status:$('status'), permPill:$('permPill'),
+    micSelect:$('micSelect'), outSelect:$('outSelect'),
+    enableBtn:$('enableBtn'), refreshBtn:$('refreshBtn'),
+    power:$('power'), powerLabel:$('powerLabel'),
+    monitorBtn:$('monitorBtn'),
+    inFill:$('inFill'), outFill:$('outFill'), guard:$('guard'),
+    depth:$('depth'), depthVal:$('depthVal'),
+    tone:$('tone'), toneVal:$('toneVal'),
+    mask:$('mask'), maskVal:$('maskVal'),
+    delay:$('delay'), delayVal:$('delayVal'),
+    polarity:$('polarity'), autoAlign:$('autoAlign'),
+    predict:$('predict'), lookahead:$('lookahead'), lookaheadVal:$('lookaheadVal'),
+    lookaheadWrap:$('lookaheadWrap'),
+    diag:$('diag')
   };
 
   /* ---------- audio state ---------- */
-  let ctx = null, stream = null, worklet = null;
-  let running = false;
-  let depthParam = null, delayParam = null, polarityParam = null,
-      maskParam = null, predictParam = null, lookaheadParam = null;
+  let ctx=null, stream=null, worklet=null, source=null;
+  let monitorGain=null, monitorOn=false;
+  let running=false;
+  let depthParam, delayParam, polarityParam, maskParam, predictParam, lookaheadParam;
+  let meterIn=0, meterOut=0, meterDuck=1, meterConf=0;
+  let smoothIn=0, smoothOut=0, rafMeter=0;
+  let sweeping=false, sweepStart=0, sweepRaf=0;
+  let measuredLatencyMs = null;
 
-  let meterIn = 0, meterOut = 0, meterDuck = 1, meterConf = 0;
-  let smoothIn = 0, smoothOut = 0;
-  let rafMeter = 0;
-
-  /* sweep */
-  let sweeping = false;
-  let sweepStart = 0;
-  let sweepRaf = 0;
-  const SWEEP_MAX_MS = 35;
-  const SWEEP_PERIOD = 16;   // seconds for one full up-down cycle
-
-  /* linear-phase FIR: fixed 33 taps → group delay exactly 16 samples */
   const FIR_TAPS = 33;
   const FIR_GROUP_DELAY = (FIR_TAPS - 1) / 2;
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  const toneToHz = (t) => 120 * Math.pow(8000/120, t);
+  const hzText = (hz) => hz >= 1000 ? (hz/1000).toFixed(2)+' kHz' : Math.round(hz)+' Hz';
+  const dbPct = (db) => clamp((db + 62)/62, 0, 1) * 100;
+  const SAMPLE_RATE_ASSUMED = 48000;
 
-  /* ---------- helpers ---------- */
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const toneToHz = (t) => 150 * Math.pow(6000 / 150, t);
-  const hzToText = (hz) => hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz';
-  const dbToPct = (db) => clamp((db + 62) / 62, 0, 1) * 100;
-
+  /* ---------- UI helpers ---------- */
   function setStatus(text, cls) {
     el.status.textContent = text;
     el.status.className = 'status' + (cls ? ' ' + cls : '');
   }
+  function setPerm(text, ok) {
+    el.permPill.textContent = text;
+    el.permPill.style.color = ok ? 'var(--accent)' : 'var(--dim)';
+    el.permPill.style.borderColor = ok ? 'rgba(53,224,161,.25)' : 'var(--line)';
+    el.permPill.style.background = ok ? 'rgba(53,224,161,.09)' : 'var(--panel)';
+  }
 
-  /* ---------- FIR design: windowed-sinc lowpass (Blackman) ---------- */
-  function designLowpass(cutoffHz, sr, N) {
+  /* ---------- device enumeration ---------- */
+  async function listDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    let devices = [];
+    try { devices = await navigator.mediaDevices.enumerateDevices(); }
+    catch (e) { console.error(e); return; }
+
+    const mics = devices.filter(d => d.kind === 'audioinput');
+    const outs = devices.filter(d => d.kind === 'audiooutput');
+
+    /* populate mics */
+    el.micSelect.innerHTML = '';
+    if (!mics.length) {
+      el.micSelect.innerHTML = '<option value="">— no mics found —</option>';
+      el.micSelect.disabled = true;
+    } else {
+      /* preserve current selection */
+      const prev = el.micSelect.dataset.saved || '';
+      mics.forEach((d, i) => {
+        const o = document.createElement('option');
+        o.value = d.deviceId;
+        o.textContent = d.label || ('Microphone ' + (i+1));
+        if (d.deviceId === prev) o.selected = true;
+        el.micSelect.appendChild(o);
+      });
+      el.micSelect.disabled = false;
+    }
+
+    /* populate outputs */
+    el.outSelect.innerHTML = '';
+    if (!outs.length) {
+      el.outSelect.innerHTML = '<option value="">— no outputs (unsupported browser?) —</option>';
+      el.outSelect.disabled = true;
+    } else {
+      const prev = el.outSelect.dataset.saved || '';
+      outs.forEach((d, i) => {
+        const o = document.createElement('option');
+        o.value = d.deviceId;
+        o.textContent = d.label || ('Output ' + (i+1));
+        if (d.deviceId === prev) o.selected = true;
+        el.outSelect.appendChild(o);
+      });
+      el.outSelect.disabled = false;
+    }
+
+    /* hint if labels missing */
+    const hasLabels = mics.length && mics[0].label && mics[0].label.length > 0;
+    if (!hasLabels) setPerm('grant to see names', false);
+    else setPerm('ok', true);
+  }
+
+  async function requestPermissionAndList() {
+    setStatus('Requesting mic…', 'busy');
+    el.enableBtn.disabled = true;
+    try {
+      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      tmp.getTracks().forEach(t => t.stop());
+    } catch (e) {
+      const nm = e && e.name;
+      setStatus(nm === 'NotAllowedError' ? 'Mic blocked' : 'Failed', 'err');
+      el.enableBtn.disabled = false;
+      return;
+    }
+    await listDevices();
+    el.refreshBtn.disabled = false;
+    el.enableBtn.textContent = 'Devices listed';
+    setStatus('Ready');
+  }
+
+  /* ---------- FIR design ---------- */
+  function designLowpass(hz, sr, N) {
     const c = new Float32Array(N);
-    const fc = cutoffHz / sr;           // normalised 0..0.5
+    const fc = hz / sr;
     const M = N - 1;
     let sum = 0;
-    for (let i = 0; i < N; i++) {
-      const k = i - M / 2;
+    for (let i=0;i<N;i++) {
+      const k = i - M/2;
       let h;
-      if (Math.abs(k) < 1e-9) h = 2 * fc;
-      else h = Math.sin(2 * Math.PI * fc * k) / (Math.PI * k);
-      const w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / M) + 0.08 * Math.cos(4 * Math.PI * i / M);
+      if (Math.abs(k) < 1e-9) h = 2*fc;
+      else h = Math.sin(2*Math.PI*fc*k) / (Math.PI*k);
+      const w = 0.42 - 0.5*Math.cos(2*Math.PI*i/M) + 0.08*Math.cos(4*Math.PI*i/M);
       h *= w;
-      c[i] = h;
-      sum += h;
+      c[i] = h; sum += h;
     }
-    for (let i = 0; i < N; i++) c[i] /= sum;
+    for (let i=0;i<N;i++) c[i] /= sum;
     return c;
   }
 
   let firScheduled = false;
-  function scheduleFir() {
-    if (!worklet || firScheduled) return;
+  function pushFir() {
+    if (!worklet || !ctx || firScheduled) return;
     firScheduled = true;
     requestAnimationFrame(() => {
       firScheduled = false;
@@ -673,96 +652,109 @@ registerProcessor('anc-processor', ANCProcessor);
   /* ---------- parameter application ---------- */
   function applyDepth() {
     const v = el.depth.value / 100;
-    el.depthVal.textContent = Math.round(v * 100) + '%';
+    el.depthVal.textContent = Math.round(v*100) + '%';
     if (depthParam) depthParam.value = v;
   }
-
   function applyTone() {
     const t = el.tone.value / 100;
-    el.toneVal.textContent = hzToText(toneToHz(t));
-    scheduleFir();
+    el.toneVal.textContent = hzText(toneToHz(t));
+    pushFir();
   }
-
   function applyMask() {
     const v = el.mask.value / 100;
-    el.maskVal.textContent = v === 0 ? 'Off' : Math.round(v * 100) + '%';
+    el.maskVal.textContent = v === 0 ? 'Off' : Math.round(v*100)+'%';
     if (maskParam) maskParam.value = v;
   }
-
-  function delayMsFromSlider() { return el.delay.value / 20; }   // 0..800 → 0..40 ms
-
   function applyDelay() {
-    const ms = delayMsFromSlider();
-    el.delayReadout.textContent = ms.toFixed(2) + ' ms';
+    const ms = el.delay.value / 100;   /* slider 0..4000 → 0..40 ms */
+    el.delayVal.textContent = ms.toFixed(1) + ' ms';
     if (delayParam && ctx) {
-      /* subtract the FIR's own group delay so the readout is honest */
       const samples = Math.max(0, ms * ctx.sampleRate / 1000 - FIR_GROUP_DELAY);
       delayParam.value = samples;
     }
   }
-
   function applyPolarity() {
     const inv = el.polarity.classList.contains('on');
     el.polarity.textContent = inv ? 'Polarity: − (inverted)' : 'Polarity: + (normal)';
     if (polarityParam) polarityParam.value = inv ? -1 : 1;
   }
-
   function applyPredict() {
     const on = el.predict.classList.contains('on');
     if (predictParam) predictParam.value = on ? 1 : 0;
-    if (!on && worklet) worklet.port.postMessage({ type: 'reset' });
+    if (worklet) worklet.port.postMessage({ type: 'reset' });
+    el.lookaheadWrap.style.opacity = on ? '1' : '.5';
+    el.lookaheadWrap.style.pointerEvents = on ? 'auto' : 'none';
   }
-
   function applyLookahead() {
-    const ms = el.lookahead.value / 20;   // 0..40 ms
+    const ms = el.lookahead.value / 100;
     el.lookaheadVal.textContent = ms.toFixed(1) + ' ms';
     if (lookaheadParam && ctx) lookaheadParam.value = ms * ctx.sampleRate / 1000;
+  }
+
+  /* ---------- diagnostics ---------- */
+  function updateDiag() {
+    if (!ctx) { el.diag.textContent = 'Not running.'; return; }
+    const base = (ctx.baseLatency || 0) * 1000;
+    const outl = (ctx.outputLatency || 0) * 1000;
+    const sr = ctx.sampleRate;
+    const bufFrames = Math.round(base / 1000 * sr);
+    const measured = measuredLatencyMs != null
+      ? '<b>You measured:</b> ~' + Math.round(measuredLatencyMs) + ' ms (from Monitor raw mic test)<br>'
+      : '<b>Measured latency:</b> use "Monitor raw mic" to find it<br>';
+    el.diag.innerHTML =
+      '<b>Sample rate:</b> ' + sr + ' Hz<br>' +
+      '<b>Buffer latency:</b> ' + base.toFixed(2) + ' ms (~' + bufFrames + ' frames)<br>' +
+      '<b>Output latency:</b> ' + outl.toFixed(2) + ' ms<br>' +
+      '<b>Context total:</b> ' + (base + outl).toFixed(2) + ' ms<br>' +
+      measured +
+      '<b>Monitor mode:</b> ' + (monitorOn ? '<span style="color:var(--warn)">ON — raw mic is being played back</span>' : 'off');
   }
 
   /* ---------- start / stop ---------- */
   async function start() {
     if (running) return;
+    if (!window.AudioWorkletNode) { setStatus('No AudioWorklet', 'err'); return; }
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus('Unsupported', 'err'); return;
-    }
-    if (!window.AudioWorkletNode) {
-      setStatus('No AudioWorklet', 'err'); return;
-    }
+    const micId = el.micSelect.value;
+    const outId = el.outSelect.value;
+
+    if (!micId) { setStatus('Pick a mic first', 'err'); return; }
 
     setStatus('Starting…', 'busy');
     el.powerLabel.textContent = 'Starting';
 
-    let localStream;
+    const constraints = {
+      audio: {
+        deviceId: micId ? { exact: micId } : undefined,
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1
+      },
+      video: false
+    };
+
     try {
-      localStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,   /* MUST be off — AEC fights the anti-noise */
-          noiseSuppression: false,   /* MUST be off — it removes the noise we invert */
-          autoGainControl: false,    /* MUST be off — AGC pumps the anti-noise */
-          channelCount: 1
-        },
-        video: false
-      });
-    } catch (err) {
-      const nm = err && err.name;
-      if (nm === 'NotAllowedError' || nm === 'SecurityError') {
-        setStatus('Mic blocked', 'err'); el.powerLabel.textContent = 'Mic blocked';
-      } else if (nm === 'NotFoundError') {
-        setStatus('No mic', 'err'); el.powerLabel.textContent = 'No mic found';
-      } else {
-        setStatus('Failed', 'err'); el.powerLabel.textContent = 'Failed';
-      }
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (e) {
+      console.error(e);
+      setStatus('Mic failed', 'err');
+      el.powerLabel.textContent = 'Mic failed';
       return;
     }
-    stream = localStream;
 
     const AC = window.AudioContext || window.webkitAudioContext;
-    /* latencyHint: 0 = ask for the smallest buffer the device will give us */
-    ctx = new AC({ latencyHint: 0 });
+    /* 'interactive' is far more stable than 0 across browsers/OS */
+    ctx = new AC({ latencyHint: 'interactive' });
     if (ctx.state === 'suspended') await ctx.resume();
 
-    /* ---- load the worklet from the inline script block ---- */
+    /* route output to chosen device if the browser supports it */
+    if (outId && ctx.setSinkId) {
+      try { await ctx.setSinkId(outId); }
+      catch (e) { console.warn('setSinkId failed', e); }
+    }
+
+    /* load worklet */
     const src = document.getElementById('anc-worklet').textContent;
     const blob = new Blob([src], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
@@ -772,24 +764,28 @@ registerProcessor('anc-processor', ANCProcessor);
       console.error(e);
       setStatus('Worklet failed', 'err');
       el.powerLabel.textContent = 'Failed';
-      try { ctx.close(); } catch (_) {}
+      try { ctx.close(); } catch(_) {}
       ctx = null;
-      try { stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      try { stream.getTracks().forEach(t => t.stop()); } catch(_) {}
       stream = null;
       return;
     }
     URL.revokeObjectURL(url);
 
-    const source = ctx.createMediaStreamSource(stream);
-    worklet = new AudioWorkletNode(ctx, 'anc-processor', {
-      numberOfInputs: 1,
-      numberOfOutputs: 1,
-      outputChannelCount: [1],
-      channelCount: 1,
-      channelCountMode: 'explicit',
-      channelInterpretation: 'speakers'
-    });
+    source = ctx.createMediaStreamSource(stream);
 
+    /* monitor path: source → monitorGain → destination (starts muted) */
+    monitorGain = ctx.createGain();
+    monitorGain.gain.value = 0;
+    source.connect(monitorGain);
+    monitorGain.connect(ctx.destination);
+
+    /* ANC path: source → worklet → destination */
+    worklet = new AudioWorkletNode(ctx, 'anc-processor', {
+      numberOfInputs: 1, numberOfOutputs: 1,
+      outputChannelCount: [1], channelCount: 1,
+      channelCountMode: 'explicit', channelInterpretation: 'speakers'
+    });
     const p = worklet.parameters;
     depthParam = p.get('depth');
     delayParam = p.get('delay');
@@ -808,27 +804,25 @@ registerProcessor('anc-processor', ANCProcessor);
       }
     };
 
-    /* push every current UI value into the graph */
+    /* apply current UI values */
     applyDepth(); applyTone(); applyMask(); applyDelay();
     applyPolarity(); applyPredict(); applyLookahead();
 
-    /* latency readout — this is the number that matters for look-ahead */
-    const base = (ctx.baseLatency || 0) * 1000;
-    const outLat = (ctx.outputLatency || 0) * 1000;
-    const total = base + outLat;
-    el.lat.textContent = 'Latency: ' + base.toFixed(1) + ' ms buffer + ' +
-      outLat.toFixed(1) + ' ms output = ' + total.toFixed(1) +
-      ' ms round-trip. Set Look-ahead to roughly this number.';
-
     running = true;
+    monitorOn = false;
+    el.monitorBtn.disabled = false;
+    el.monitorBtn.classList.remove('on','amber');
+    el.monitorBtn.textContent = '🎧 Monitor raw mic (test)';
+
     el.power.classList.add('on');
-    el.power.setAttribute('aria-pressed', 'true');
+    el.power.setAttribute('aria-pressed','true');
     el.powerLabel.textContent = 'Engaged';
     el.dot.classList.add('on');
     setStatus('Engaged', 'on');
 
     cancelAnimationFrame(rafMeter);
     meterLoop();
+    updateDiag();
   }
 
   function stop() {
@@ -837,22 +831,28 @@ registerProcessor('anc-processor', ANCProcessor);
     cancelAnimationFrame(sweepRaf);
     sweeping = false;
 
-    try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {}
-    try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch (e) {}
+    try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch(_) {}
+    try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch(_) {}
 
-    ctx = null; stream = null; worklet = null;
+    ctx = null; stream = null; worklet = null; source = null; monitorGain = null;
     depthParam = delayParam = polarityParam = maskParam = predictParam = lookaheadParam = null;
+
+    monitorOn = false;
+    el.monitorBtn.disabled = true;
+    el.monitorBtn.classList.remove('on','amber');
+    el.monitorBtn.textContent = '🎧 Monitor raw mic (test)';
 
     el.inFill.style.width = '0%';
     el.outFill.style.width = '0%';
     el.guard.classList.remove('show');
     el.power.classList.remove('on');
-    el.power.setAttribute('aria-pressed', 'false');
+    el.power.setAttribute('aria-pressed','false');
     el.powerLabel.textContent = 'Tap to engage';
     el.dot.classList.remove('on');
     setStatus('Idle');
-    el.autoAlign.textContent = 'Auto-align';
+    el.autoAlign.textContent = 'Auto-align sweep';
     el.autoAlign.classList.remove('warn');
+    updateDiag();
   }
 
   /* ---------- meter loop ---------- */
@@ -860,17 +860,38 @@ registerProcessor('anc-processor', ANCProcessor);
     rafMeter = requestAnimationFrame(meterLoop);
     if (!running) return;
 
-    const dbIn = 20 * Math.log10(meterIn + 1e-8);
-    const dbOut = 20 * Math.log10(meterOut + 1e-8);
-    const pIn = dbToPct(dbIn);
-    const pOut = dbToPct(dbOut);
-
-    smoothIn += (pIn - smoothIn) * (pIn > smoothIn ? 0.5 : 0.08);
+    const pIn = dbPct(20*Math.log10(meterIn + 1e-8));
+    const pOut = dbPct(20*Math.log10(meterOut + 1e-8));
+    smoothIn  += (pIn  - smoothIn)  * (pIn  > smoothIn  ? 0.5 : 0.08);
     smoothOut += (pOut - smoothOut) * (pOut > smoothOut ? 0.5 : 0.08);
-
-    el.inFill.style.width = smoothIn.toFixed(1) + '%';
+    el.inFill.style.width  = smoothIn.toFixed(1) + '%';
     el.outFill.style.width = smoothOut.toFixed(1) + '%';
     el.guard.classList.toggle('show', meterDuck < 0.85);
+  }
+
+  /* ---------- monitor toggle ---------- */
+  function toggleMonitor() {
+    if (!running || !monitorGain || !ctx) return;
+    monitorOn = !monitorOn;
+    if (monitorOn) {
+      /* mute ANC while monitoring */
+      if (worklet) {
+        const en = worklet.parameters.get('enabled');
+        if (en) en.value = 0;
+      }
+      monitorGain.gain.setTargetAtTime(1, ctx.currentTime, 0.02);
+      el.monitorBtn.classList.add('on','amber');
+      el.monitorBtn.textContent = '🔴 Monitoring raw mic — clap to hear latency';
+    } else {
+      monitorGain.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+      if (worklet) {
+        const en = worklet.parameters.get('enabled');
+        if (en) en.value = 1;
+      }
+      el.monitorBtn.classList.remove('on','amber');
+      el.monitorBtn.textContent = '🎧 Monitor raw mic (test)';
+    }
+    updateDiag();
   }
 
   /* ---------- auto-align sweep ---------- */
@@ -878,53 +899,49 @@ registerProcessor('anc-processor', ANCProcessor);
     if (!running) return;
     sweeping = true;
     sweepStart = performance.now();
-    el.autoAlign.textContent = '⏺ LOCK (tap when quietest)';
+    el.autoAlign.textContent = '⏺ Lock (tap when quietest)';
     el.autoAlign.classList.add('warn');
     cancelAnimationFrame(sweepRaf);
     sweepStep();
   }
-
   function sweepStep() {
     if (!sweeping) return;
     sweepRaf = requestAnimationFrame(sweepStep);
     const t = (performance.now() - sweepStart) / 1000;
-    const phase = (t % SWEEP_PERIOD) / SWEEP_PERIOD;
-    /* triangle wave 0 → 1 → 0 */
-    const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-    const ms = tri * SWEEP_MAX_MS;
-    el.delay.value = Math.round(ms * 20);
+    const period = 16;
+    const phase = (t % period) / period;
+    const tri = phase < 0.5 ? phase*2 : (1-phase)*2;
+    /* sweep 0..20 ms on the delay slider (0..2000) */
+    el.delay.value = Math.round(tri * 2000);
     applyDelay();
   }
-
   function lockSweep() {
     sweeping = false;
     cancelAnimationFrame(sweepRaf);
-    el.autoAlign.textContent = 'Auto-align';
+    el.autoAlign.textContent = 'Auto-align sweep';
     el.autoAlign.classList.remove('warn');
   }
 
   /* ---------- wiring ---------- */
+  el.enableBtn.addEventListener('click', requestPermissionAndList);
+  el.refreshBtn.addEventListener('click', listDevices);
+
+  el.micSelect.addEventListener('change', () => {
+    el.micSelect.dataset.saved = el.micSelect.value;
+    if (running) { stop(); }
+  });
+  el.outSelect.addEventListener('change', () => {
+    el.outSelect.dataset.saved = el.outSelect.value;
+    if (running) { stop(); }
+  });
+
   el.power.addEventListener('click', () => { if (running) stop(); else start(); });
+  el.monitorBtn.addEventListener('click', toggleMonitor);
 
   el.depth.addEventListener('input', applyDepth);
   el.tone.addEventListener('input', applyTone);
   el.mask.addEventListener('input', applyMask);
-
-  el.delay.addEventListener('input', () => {
-    if (sweeping) lockSweep();
-    applyDelay();
-  });
-
-  el.stepDown.addEventListener('click', () => {
-    if (sweeping) lockSweep();
-    el.delay.value = Math.max(0, parseInt(el.delay.value, 10) - 1);
-    applyDelay();
-  });
-  el.stepUp.addEventListener('click', () => {
-    if (sweeping) lockSweep();
-    el.delay.value = Math.min(800, parseInt(el.delay.value, 10) + 1);
-    applyDelay();
-  });
+  el.delay.addEventListener('input', () => { if (sweeping) lockSweep(); applyDelay(); });
 
   el.polarity.addEventListener('click', () => {
     el.polarity.classList.toggle('on');
@@ -946,35 +963,45 @@ registerProcessor('anc-processor', ANCProcessor);
     applyLookahead();
   });
 
-  /* keyboard fine-tune */
+  /* keyboard: ← → nudge delay; space toggles sweep; m toggles monitor */
   window.addEventListener('keydown', (e) => {
     if (!running) return;
     const tag = e.target && e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      const step = e.shiftKey ? 10 : 1;
+      const step = e.shiftKey ? 50 : 5;
       let v = parseInt(el.delay.value, 10) + (e.key === 'ArrowRight' ? step : -step);
-      el.delay.value = clamp(v, 0, 800);
+      el.delay.value = clamp(v, 0, 4000);
       if (sweeping) lockSweep();
       applyDelay();
       e.preventDefault();
     } else if (e.key === 'p' || e.key === 'P') {
       el.polarity.click();
+    } else if (e.key === 'm' || e.key === 'M') {
+      toggleMonitor();
     } else if (e.key === ' ' || e.key === 'Spacebar') {
-      if (running) { if (sweeping) lockSweep(); else startSweep(); }
+      if (sweeping) lockSweep(); else startSweep();
       e.preventDefault();
     }
   });
 
-  /* ---------- init labels ---------- */
-  el.depthVal.textContent = el.depth.value + '%';
-  el.toneVal.textContent = hzToText(toneToHz(el.tone.value / 100));
-  el.maskVal.textContent = el.mask.value === '0' ? 'Off' : el.mask.value + '%';
-  el.delayReadout.textContent = '0.00 ms';
-  el.lookaheadVal.textContent = (el.lookahead.value / 20).toFixed(1) + ' ms';
-  applyPolarity();
+  /* device change events */
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      if (!running) listDevices();
+    });
+  }
 
-  /* ---------- cleanup ---------- */
+  /* ---------- init ---------- */
+  el.depthVal.textContent = el.depth.value + '%';
+  el.toneVal.textContent = hzText(toneToHz(el.tone.value / 100));
+  el.maskVal.textContent = 'Off';
+  el.delayVal.textContent = '0.0 ms';
+  el.lookaheadVal.textContent = (el.lookahead.value/100).toFixed(1) + ' ms';
+  applyPolarity();
+  applyPredict();
+  updateDiag();
+
   window.addEventListener('pagehide', () => { if (running) stop(); });
   window.addEventListener('beforeunload', () => { if (running) stop(); });
 
