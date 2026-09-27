@@ -84,68 +84,51 @@
   </div>
 
   <script>
-    // server.js
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch'); // Use 'npm install node-fetch@2' if on Node < 18
-const path = require('path');
+    const payBtn = document.getElementById('payBtn');
+    const statusEl = document.getElementById('status');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+    // ⚠️ IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED BACKEND URL
+    // Do NOT use /api/pay because GitHub Pages cannot run backend code.
+    const API_URL = 'https://your-backend-server-url.com/api/pay'; 
 
-// Serve your index.html file from the "public" folder
-app.use(express.static(path.join(__dirname, 'public')));
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', isError);
+    }
 
-// Your API Key (NEVER expose this in the frontend HTML!)
-// Create a .env file and put: PAYMENT_SECRET_KEY=sk_test_ACI_toUmxsLB-VR2-htStyQfxvUUYhKY
-const SECRET_KEY = process.env.PAYMENT_SECRET_KEY || 'sk_test_ACI_toUmxsLB-VR2-htStyQfxvUUYhKY';
+    payBtn.addEventListener('click', async () => {
+      payBtn.disabled = true;
+      payBtn.textContent = 'Processing…';
+      setStatus('Creating your payment…');
 
-app.post('/api/pay', async (req, res) => {
-  try {
-    const { amount, currency } = req.body;
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 50, currency: 'ETB' })
+        });
 
-    // 1. Replace this URL with your actual payment gateway's API endpoint.
-    // (Example: Chapa, Telebirr, Stripe, etc.)
-    const GATEWAY_API_URL = 'https://api.yourpaymentgateway.com/v1/checkout'; 
+        // Check if the server returned HTML instead of JSON (prevents "Unexpected token '<'" error)
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(`Server error (${res.status}). Ensure your backend URL is correct and the server is running.`);
+        }
 
-    // 2. Make the request to the payment gateway
-    // NOTE: This is a mock response for demonstration since the exact gateway wasn't specified.
-    // In a real app, you would uncomment the fetch request below and adjust the body/headers.
-    
-    /*
-    const response = await fetch(GATEWAY_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SECRET_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        amount: amount * 100, // Often gateways expect cents/centimes
-        currency: currency,
-        callback_url: 'http://localhost:3000/success'
-      })
+        const data = await res.json();
+
+        if (!res.ok || !data.checkout_url) {
+          throw new Error(data.error?.message || data.message || 'Could not start payment.');
+        }
+
+        setStatus('Redirecting to secure checkout…');
+        window.location.href = data.checkout_url;
+
+      } catch (err) {
+        setStatus(err.message || 'Something went wrong.', true);
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay 50 Birr';
+      }
     });
-    const data = await response.json();
-    */
-
-    // --- MOCK SUCCESS RESPONSE (Remove this when you have the real API) ---
-    const data = {
-      checkout_url: 'https://example.com/mock-checkout-page' 
-    };
-    // ----------------------------------------------------------------------
-
-    res.json(data);
-
-  } catch (error) {
-    console.error('Payment error:', error);
-    res.status(500).json({ error: { message: 'Payment processing failed.' } });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   </script>
 </body>
 </html>
