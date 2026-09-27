@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080c">
+<title>EarPod ANC — Anti-Noise Engine</title>
+<style>
+  :root{
+    --bg:#07080c;
+    --panel:rgba(255,255,255,.045);
+    --line:rgba(255,255,255,.09);
+    --txt:#e9edf4;
+    --dim:#7d8798;
+    --accent:#35e0a1;
+    --accent2:#22d3ee;
+    --warn:#ffb020;
+    --danger:#ff5a6a;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(900px 600px at 50% -10%, rgba(53,224,161,.10), transparent 60%),
+      radial-gradient(700px 500px at 100% 110%, rgba(34,211,238,.08), transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:22px 16px 40px;
+    min-height:100%;
+  }
+
+  .app{width:100%; max-width:460px; display:flex; flex-direction:column; gap:20px;}
+
+  /* ---------- header ---------- */
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .brand{
+    display:flex; align-items:center; gap:9px;
+    font-size:15px; font-weight:650; letter-spacing:.02em;
+  }
+  .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--dim);
+    box-shadow:0 0 0 0 rgba(53,224,161,0);
+    transition:.3s;
+  }
+  .dot.on{background:var(--accent); box-shadow:0 0 12px 2px rgba(53,224,161,.6);}
+
+  .status{
+    font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--dim);
+    padding:5px 11px; border-radius:999px;
+    border:1px solid var(--line); background:var(--panel);
+    transition:.25s;
+  }
+  .status.on{color:var(--accent); border-color:rgba(53,224,161,.35); background:rgba(53,224,161,.08);}
+  .status.err{color:var(--danger); border-color:rgba(255,90,106,.35); background:rgba(255,90,106,.08);}
+  .status.busy{color:var(--warn); border-color:rgba(255,176,32,.35); background:rgba(255,176,32,.08);}
+
+  /* ---------- power button ---------- */
+  .power-wrap{display:flex; justify-content:center; padding:6px 0 2px;}
+
+  .power{
+    position:relative;
+    width:158px; height:158px; border-radius:50%;
+    border:1px solid var(--line);
+    background:
+      radial-gradient(circle at 50% 32%, rgba(255,255,255,.09), transparent 62%),
+      linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
+    color:var(--txt);
+    cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    font-family:inherit;
+    transition:transform .18s cubic-bezier(.2,.9,.3,1.3), box-shadow .35s, border-color .35s;
+    box-shadow:0 18px 50px -18px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+    user-select:none;
+  }
+  .power:active{transform:scale(.955);}
+
+  .power.on{
+    border-color:rgba(53,224,161,.55);
+    box-shadow:
+      0 0 0 1px rgba(53,224,161,.14),
+      0 0 70px -6px rgba(53,224,161,.42),
+      0 0 140px -20px rgba(34,211,238,.35),
+      inset 0 1px 0 rgba(255,255,255,.09);
+  }
+  .power.on::after{
+    content:"";
+    position:absolute; inset:-1px; border-radius:50%;
+    border:1px solid rgba(53,224,161,.5);
+    animation:ripple 2.6s ease-out infinite;
+    pointer-events:none;
+  }
+  @keyframes ripple{
+    0%{transform:scale(1); opacity:.7;}
+    100%{transform:scale(1.42); opacity:0;}
+  }
+
+  .power-icon{font-size:40px; line-height:1; transition:.3s; opacity:.85;}
+  .power.on .power-icon{
+    color:var(--accent);
+    opacity:1;
+    filter:drop-shadow(0 0 14px rgba(53,224,161,.75));
+  }
+  .power-label{
+    font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--dim); transition:.3s;
+  }
+  .power.on .power-label{color:var(--accent);}
+
+  /* ---------- meters ---------- */
+  .meters{
+    display:flex; flex-direction:column; gap:11px;
+    padding:15px 16px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:var(--panel);
+  }
+  .meter-row{display:flex; align-items:center; gap:11px;}
+  .meter-label{
+    width:78px; flex:none;
+    font-size:10.5px; font-weight:650; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--dim);
+  }
+  .meter{
+    flex:1; height:8px; border-radius:99px; overflow:hidden;
+    background:rgba(255,255,255,.055);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.5);
+  }
+  .fill{height:100%; width:0%; border-radius:99px; will-change:width;}
+  .fill.in{background:linear-gradient(90deg,#2a6cff,#22d3ee);}
+  .fill.out{background:linear-gradient(90deg,#0f9d6b,#35e0a1);}
+  .guard{
+    font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--danger); opacity:0; transition:.2s; font-weight:700; text-align:center;
+  }
+  .guard.show{opacity:1;}
+
+  /* ---------- controls ---------- */
+  .controls{
+    display:flex; flex-direction:column; gap:19px;
+    padding:18px 16px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:var(--panel);
+  }
+  .ctrl{display:flex; flex-direction:column; gap:9px;}
+  .ctrl-head{display:flex; align-items:baseline; justify-content:space-between;}
+  .ctrl-name{font-size:12.5px; font-weight:600; letter-spacing:.02em;}
+  .ctrl-val{
+    font-size:11.5px; font-variant-numeric:tabular-nums;
+    color:var(--accent); font-weight:650;
+  }
+  .ctrl-hint{font-size:10.5px; color:var(--dim); line-height:1.45; margin-top:-2px;}
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:22px; background:transparent; cursor:pointer; margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:5px; border-radius:99px;
+    background:rgba(255,255,255,.10);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:19px; height:19px; margin-top:-7px; border-radius:50%;
+    background:#eafff7;
+    border:1px solid rgba(53,224,161,.8);
+    box-shadow:0 0 14px rgba(53,224,161,.5), 0 2px 6px rgba(0,0,0,.5);
+    transition:transform .12s;
+  }
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18);}
+  input[type=range]::-moz-range-track{
+    height:5px; border-radius:99px; background:rgba(255,255,255,.10);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%;
+    background:#eafff7; border:1px solid rgba(53,224,161,.8);
+    box-shadow:0 0 14px rgba(53,224,161,.5);
+  }
+
+  /* ---------- help ---------- */
+  details.help{
+    border-radius:16px; border:1px solid var(--line);
+    background:var(--panel); overflow:hidden;
+  }
+  details.help summary{
+    cursor:pointer; list-style:none;
+    padding:14px 16px;
+    font-size:12px; font-weight:650; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--dim);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  details.help summary::-webkit-details-marker{display:none;}
+  details.help summary::after{content:"+"; font-size:16px; color:var(--dim);}
+  details.help[open] summary::after{content:"–";}
+  .help-body{
+    padding:0 16px 16px; font-size:12.5px; line-height:1.62; color:#b9c2d0;
+  }
+  .help-body h4{
+    margin:14px 0 6px; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--accent);
+  }
+  .help-body h4:first-child{margin-top:4px;}
+  .help-body ol,.help-body ul{margin:0; padding-left:18px;}
+  .help-body li{margin-bottom:5px;}
+  .help-body code{
+    background:rgba(255,255,255,.07); padding:1px 5px; border-radius:5px;
+    font-size:11.5px; color:#dbe3ee;
+  }
+  .lat{
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+    font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand"><span class="dot" id="dot"></span> EarPod ANC</div>
+    <div class="status" id="status">Idle</div>
+  </header>
+
+  <div class="power-wrap">
+    <button class="power" id="power" aria-pressed="false">
+      <span class="power-icon">⏻</span>
+      <span class="power-label" id="powerLabel">Tap to engage</span>
+    </button>
+  </div>
+
+  <div class="meters">
+    <div class="meter-row">
+      <span class="meter-label">Room</span>
+      <div class="meter"><div class="fill in" id="inFill"></div></div>
+    </div>
+    <div class="meter-row">
+      <span class="meter-label">Anti-noise</span>
+      <div class="meter"><div class="fill out" id="outFill"></div></div>
+    </div>
+    <div class="guard" id="guard">⚠ feedback guard active</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="ctrl-name">Depth</span>
+        <span class="ctrl-val" id="depthVal">80%</span>
+      </div>
+      <input type="range" id="depth" min="0" max="100" value="80" step="1">
+      <div class="ctrl-hint">How hard the anti-noise pushes. Push until the rumble drops, then stop — past the sweet spot it gets hollow and louder.</div>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="ctrl-name">Tone / band</span>
+        <span class="ctrl-val" id="toneVal">900 Hz</span>
+      </div>
+      <input type="range" id="tone" min="0" max="100" value="42" step="1">
+      <div class="ctrl-hint">Low = pure rumble killing. High = wider band, but phase error makes it sound phasey.</div>
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <span class="ctrl-name">Masking bed</span>
+        <span class="ctrl-val" id="maskVal">Off</span>
+      </div>
+      <input type="range" id="mask" min="0" max="100" value="0" step="1">
+      <div class="ctrl-hint">Soft brown noise that hides what ANC physically can't cancel (voices, clatter). Off by default.</div>
+    </div>
+  </div>
+
+  <details class="help">
+    <summary>How to actually make it work</summary>
+    <div class="help-body">
+      <h4>Setup that matters</h4>
+      <ol>
+        <li><b>Connect your earbuds first</b>, then open this page. The browser picks the audio output at start.</li>
+        <li><b>Put the mic near the noise</b> — phone on the desk next to the fan / AC / window, not in your hand next to your ear. The mic samples the noise, this page inverts it, and your earbuds fire the anti-noise into your ear where it meets the real noise.</li>
+        <li>Keep the page open and the screen on. Tap the button once and allow microphone access.</li>
+      </ol>
+
+      <h4>What it can and can't kill</h4>
+      <ul>
+        <li><b>Kills well:</b> fans, AC hum, engine drone, road rumble, transformer hum, airplane cabin — steady low-frequency stuff.</li>
+        <li><b>Won't kill:</b> speech, clatter, doors, sharp transients. That's physics, not a bug in the code.</li>
+      </ul>
+
+      <h4>Tuning it</h4>
+      <ul>
+        <li>Start with <b>Depth 80%</b>, <b>Tone ~900 Hz</b>.</li>
+        <li>If the room gets <i>louder</i> or hollow, you've pushed Depth too far — back it down to ~60%.</li>
+        <li>For pure rumble (plane, fan), drop Tone to 20–30%.</li>
+      </ul>
+
+      <h4>Why it isn't perfect</h4>
+      <p>Real ANC chips run at ~0.05 ms latency. A browser runs at 10–30 ms. Sound has to arrive at your ear exactly out of phase; above roughly 1 kHz the timing error is bigger than a wavelength, so the "anti-noise" starts <i>adding</i> sound instead. That's what the Tone slider is for — it keeps the anti-noise in the band where cancellation actually works.</p>
+
+      <h4>If you hear howling</h4>
+      <p>Lower Depth, or move the mic away from the earbuds. The feedback guard will auto-duck the output if it detects a runaway loop, but don't rely on it.</p>
+
+      <div class="lat" id="lat">Latency readout: —</div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const ui = {
+    power: $('power'), powerLabel: $('powerLabel'), dot: $('dot'), status: $('status'),
+    inFill: $('inFill'), outFill: $('outFill'), guard: $('guard'),
+    depth: $('depth'), depthVal: $('depthVal'),
+    tone: $('tone'), toneVal: $('toneVal'),
+    mask: $('mask'), maskVal: $('maskVal'),
+    lat: $('lat')
+  };
+
+  const TONE_MIN = 200, TONE_MAX = 8000;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  // ---- audio state ----
+  let ctx = null, stream = null;
+  let src = null, lp = null, inv = null, out = null;
+  let maskSrc = null, maskGain = null;
+  let anIn = null, anOut = null, bufIn = null, bufOut = null;
+  let raf = 0, running = false;
+  let duck = 1, duckTarget = 1;
+  let smoothIn = 0, smoothOut = 0;
+
+  // ---- helpers ----
+  const toneHz = t => TONE_MIN * Math.pow(TONE_MAX / TONE_MIN, t);
+  const dbToPct = db => clamp((db + 62) / 62, 0, 1) * 100;
+
+  function rms(buf) {
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    return Math.sqrt(s / buf.length);
+  }
+
+  function setStatus(text, cls) {
+    ui.status.textContent = text;
+    ui.status.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function makeBrownNoise(seconds) {
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      d[i] = last * 3.2;
+    }
+    return buf;
+  }
+
+  // ---- parameter application ----
+  function applyDepth() {
+    const v = parseInt(ui.depth.value, 10) / 100;
+    ui.depthVal.textContent = Math.round(v * 100) + '%';
+    if (inv) inv.gain.setTargetAtTime(-v, ctx.currentTime, 0.02);
+  }
+
+  function applyTone() {
+    const t = parseInt(ui.tone.value, 10) / 100;
+    const hz = toneHz(t);
+    ui.toneVal.textContent = hz >= 1000
+      ? (hz / 1000).toFixed(1) + ' kHz'
+      : Math.round(hz) + ' Hz';
+    if (lp) lp.frequency.setTargetAtTime(hz, ctx.currentTime, 0.02);
+  }
+
+  function applyMask() {
+    const v = parseInt(ui.mask.value, 10) / 100;
+    ui.maskVal.textContent = v === 0 ? 'Off' : Math.round(v * 100) + '%';
+    if (maskGain) {
+      const g = Math.pow(v, 1.6) * 0.20;
+      maskGain.gain.setTargetAtTime(g, ctx.currentTime, 0.05);
+    }
+  }
+
+  // ---- meter + feedback guard loop ----
+  function loop() {
+    raf = requestAnimationFrame(loop);
+    if (!running) return;
+
+    anIn.getFloatTimeDomainData(bufIn);
+    anOut.getFloatTimeDomainData(bufOut);
+
+    const rIn = rms(bufIn);
+    const rOut = rms(bufOut);
+
+    const dbIn = 20 * Math.log10(rIn + 1e-8);
+    const dbOut = 20 * Math.log10(rOut + 1e-8);
+
+    // gentle ballistic smoothing
+    smoothIn += (dbToPct(dbIn) - smoothIn) * (dbToPct(dbIn) > smoothIn ? 0.55 : 0.10);
+    smoothOut += (dbToPct(dbOut) - smoothOut) * (dbToPct(dbOut) > smoothOut ? 0.55 : 0.10);
+
+    ui.inFill.style.width = smoothIn.toFixed(1) + '%';
+    ui.outFill.style.width = smoothOut.toFixed(1) + '%';
+
+    // feedback guard: if output RMS runs away, duck the whole chain
+    duckTarget = rOut > 0.30 ? 0.30 : 1;
+    const speed = duckTarget < duck ? 0.45 : 0.03;
+    duck += (duckTarget - duck) * speed;
+    if (out) out.gain.value = duck;
+
+    ui.guard.classList.toggle('show', duck < 0.85);
+  }
+
+  // ---- start / stop ----
+  async function start() {
+    if (running) return;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('Unsupported', 'err');
+      return;
+    }
+
+    setStatus('Starting…', 'busy');
+    ui.powerLabel.textContent = 'Starting';
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,   // MUST be off — AEC fights the anti-noise
+          noiseSuppression: false,   // MUST be off — it removes the noise we want to invert
+          autoGainControl: false,    // MUST be off — AGC would pump the anti-noise
+          channelCount: 1
+        },
+        video: false
+      });
+    } catch (err) {
+      console.error(err);
+      const n = err && err.name;
+      if (n === 'NotAllowedError' || n === 'SecurityError') {
+        setStatus('Mic blocked', 'err');
+        ui.powerLabel.textContent = 'Mic blocked';
+      } else if (n === 'NotFoundError') {
+        setStatus('No mic', 'err');
+        ui.powerLabel.textContent = 'No mic found';
+      } else {
+        setStatus('Failed', 'err');
+        ui.powerLabel.textContent = 'Failed';
+      }
+      return;
+    }
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC({ latencyHint: 'interactive' });
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    // --- graph ---
+    src = ctx.createMediaStreamSource(stream);
+
+    lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.707;              // Butterworth, no resonant peak
+
+    inv = ctx.createGain();          // the phase inverter
+    inv.gain.value = -0.8;
+
+    out = ctx.createGain();
+    out.gain.value = 1;
+
+    src.connect(lp);
+    lp.connect(inv);
+    inv.connect(out);
+    out.connect(ctx.destination);
+
+    // --- masking bed ---
+    maskSrc = ctx.createBufferSource();
+    maskSrc.buffer = makeBrownNoise(4);
+    maskSrc.loop = true;
+    maskGain = ctx.createGain();
+    maskGain.gain.value = 0;
+    maskSrc.connect(maskGain);
+    maskGain.connect(out);
+    maskSrc.start();
+
+    // --- analysers ---
+    anIn = ctx.createAnalyser();
+    anIn.fftSize = 1024;
+    anIn.smoothingTimeConstant = 0;
+    src.connect(anIn);
+
+    anOut = ctx.createAnalyser();
+    anOut.fftSize = 1024;
+    anOut.smoothingTimeConstant = 0;
+    out.connect(anOut);
+
+    bufIn = new Float32Array(anIn.fftSize);
+    bufOut = new Float32Array(anOut.fftSize);
+
+    // --- apply current UI values ---
+    applyDepth();
+    applyTone();
+    applyMask();
+
+    // --- latency readout ---
+    const base = (ctx.baseLatency || 0) * 1000;
+    const outLat = (ctx.outputLatency || 0) * 1000;
+    ui.lat.textContent =
+      'Latency readout: ' + base.toFixed(1) + ' ms buffer + ' +
+      outLat.toFixed(1) + ' ms output ≈ ' + (base + outLat).toFixed(1) + ' ms total';
+
+    running = true;
+    duck = 1;
+
+    ui.power.classList.add('on');
+    ui.power.setAttribute('aria-pressed', 'true');
+    ui.powerLabel.textContent = 'Engaged';
+    ui.dot.classList.add('on');
+    setStatus('Engaged', 'on');
+
+    cancelAnimationFrame(raf);
+    loop();
+  }
+
+  function stop() {
+    running = false;
+    cancelAnimationFrame(raf);
+
+    try { if (maskSrc) maskSrc.stop(); } catch (e) {}
+    try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch (e) {}
+
+    ctx = stream = src = lp = inv = out = maskSrc = maskGain = anIn = anOut = null;
+    bufIn = bufOut = null;
+
+    ui.inFill.style.width = '0%';
+    ui.outFill.style.width = '0%';
+    ui.guard.classList.remove('show');
+    ui.power.classList.remove('on');
+    ui.power.setAttribute('aria-pressed', 'false');
+    ui.powerLabel.textContent = 'Tap to engage';
+    ui.dot.classList.remove('on');
+    setStatus('Idle');
+  }
+
+  // ---- wiring ----
+  ui.power.addEventListener('click', () => {
+    if (running) stop();
+    else start();
+  });
+
+  ui.depth.addEventListener('input', applyDepth);
+  ui.tone.addEventListener('input', applyTone);
+  ui.mask.addEventListener('input', applyMask);
+
+  // init labels
+  applyDepthLabelOnly();
+  function applyDepthLabelOnly() {
+    ui.depthVal.textContent = ui.depth.value + '%';
+    const t = parseInt(ui.tone.value, 10) / 100;
+    const hz = toneHz(t);
+    ui.toneVal.textContent = hz >= 1000
+      ? (hz / 1000).toFixed(1) + ' kHz'
+      : Math.round(hz) + ' Hz';
+  }
+
+  // clean shutdown
+  window.addEventListener('pagehide', () => { if (running) stop(); });
+  window.addEventListener('beforeunload', () => { if (running) stop(); });
+
+  // warn if not a secure context
+  if (!window.isSecureContext) {
+    setStatus('Needs HTTPS', 'err');
+  }
+})();
+</script>
+</body>
+</html>
