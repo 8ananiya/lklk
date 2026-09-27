@@ -88,7 +88,8 @@
     const statusEl = document.getElementById('status');
 
     // ⚠️ IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED BACKEND URL
-    // Do NOT use /api/pay because GitHub Pages cannot run backend code.
+    // Example: 'https://my-backend.onrender.com/api/pay'
+    // DO NOT USE '/api/pay' because GitHub Pages cannot run backend code.
     const API_URL = 'https://your-backend-server-url.com/api/pay'; 
 
     function setStatus(msg, isError = false) {
@@ -108,7 +109,8 @@
           body: JSON.stringify({ amount: 50, currency: 'ETB' })
         });
 
-        // Check if the server returned HTML instead of JSON (prevents "Unexpected token '<'" error)
+        // Check if the server returned HTML instead of JSON 
+        // This prevents the "Unexpected token '<'" error
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           throw new Error(`Server error (${res.status}). Ensure your backend URL is correct and the server is running.`);
