@@ -1,1004 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#07080c">
-<title>Anti-Noise Forge — Invert any sound</title>
-<style>
-  :root{
-    --bg:#07080c; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.028);
-    --line:rgba(255,255,255,.09); --txt:#e9edf4; --dim:#7d8798;
-    --accent:#35e0a1; --accent2:#22d3ee; --warn:#ffb020; --danger:#ff5a6a;
-    --blue:#4a9eff;
-  }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
-  body{
-    margin:0;
-    background:
-      radial-gradient(900px 600px at 50% -10%, rgba(53,224,161,.10), transparent 60%),
-      radial-gradient(700px 500px at 100% 110%, rgba(34,211,238,.08), transparent 60%),
-      var(--bg);
-    color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    display:flex;justify-content:center;padding:18px 14px 40px;min-height:100%;
-    -webkit-font-smoothing:antialiased;
-  }
-  .app{width:100%;max-width:520px;display:flex;flex-direction:column;gap:14px;}
-
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);transition:.3s;}
-  .dot.on{background:var(--accent);box-shadow:0 0 12px 2px rgba(53,224,161,.6);}
-  .status{
-    font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--dim);padding:5px 11px;border-radius:999px;
-    border:1px solid var(--line);background:var(--panel);transition:.25s;
-  }
-  .status.on{color:var(--accent);border-color:rgba(53,224,161,.35);background:rgba(53,224,161,.08);}
-  .status.err{color:var(--danger);border-color:rgba(255,90,106,.35);background:rgba(255,90,106,.08);}
-  .status.busy{color:var(--warn);border-color:rgba(255,176,32,.35);background:rgba(255,176,32,.08);}
-
-  .card{
-    display:flex;flex-direction:column;gap:12px;
-    padding:15px;border-radius:15px;border:1px solid var(--line);background:var(--panel);
-  }
-  .card h2{margin:0;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);}
-  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .pill{
-    font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
-    color:var(--accent);background:rgba(53,224,161,.09);
-    border:1px solid rgba(53,224,161,.25);padding:3px 9px;border-radius:999px;
-  }
-
-  /* drop zone */
-  .drop{
-    border:1.5px dashed rgba(255,255,255,.16);
-    border-radius:14px;padding:28px 16px;
-    text-align:center;cursor:pointer;
-    transition:.2s;background:var(--panel2);
-  }
-  .drop:hover, .drop.over{
-    border-color:rgba(53,224,161,.55);
-    background:rgba(53,224,161,.05);
-  }
-  .drop-icon{font-size:32px;opacity:.6;display:block;margin-bottom:8px;}
-  .drop-title{font-size:13.5px;font-weight:600;margin-bottom:3px;}
-  .drop-sub{font-size:11.5px;color:var(--dim);}
-  .drop input{display:none;}
-
-  /* waveform */
-  .wave-wrap{
-    position:relative;border-radius:11px;overflow:hidden;
-    background:rgba(0,0,0,.35);border:1px solid var(--line);
-  }
-  canvas#wave{display:block;width:100%;height:130px;}
-  .wave-legend{
-    display:flex;gap:14px;justify-content:center;
-    font-size:10.5px;color:var(--dim);letter-spacing:.05em;
-    padding:7px 0 2px;
-  }
-  .wave-legend span{display:flex;align-items:center;gap:5px;}
-  .sw{width:11px;height:3px;border-radius:2px;}
-  .sw.blue{background:var(--blue);}
-  .sw.green{background:var(--accent);}
-  .playhead{
-    position:absolute;top:0;bottom:0;width:2px;
-    background:rgba(255,255,255,.75);
-    pointer-events:none;opacity:0;
-    box-shadow:0 0 8px rgba(255,255,255,.5);
-  }
-  .playhead.on{opacity:1;}
-
-  /* controls */
-  .ctrl{display:flex;flex-direction:column;gap:6px;}
-  .ctrl-head{display:flex;align-items:baseline;justify-content:space-between;}
-  .ctrl-name{font-size:12.5px;font-weight:600;}
-  .ctrl-val{font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:650;}
-  .ctrl-hint{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:-2px;}
-
-  input[type=range]{
-    -webkit-appearance:none;appearance:none;width:100%;height:22px;
-    background:transparent;cursor:pointer;margin:0;
-  }
-  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;
-    width:19px;height:19px;margin-top:-7px;border-radius:50%;
-    background:#eafff7;border:1px solid rgba(53,224,161,.8);
-    box-shadow:0 0 14px rgba(53,224,161,.5), 0 2px 6px rgba(0,0,0,.5);
-    transition:transform .12s;
-  }
-  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18);}
-  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
-  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#eafff7;border:1px solid rgba(53,224,161,.8);box-shadow:0 0 14px rgba(53,224,161,.5);}
-
-  .btn{
-    flex:1;min-width:0;
-    padding:11px 12px;border-radius:11px;
-    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
-    font-size:12px;font-weight:650;font-family:inherit;letter-spacing:.03em;
-    cursor:pointer;transition:.15s;user-select:none;
-    display:flex;align-items:center;justify-content:center;gap:6px;
-  }
-  .btn:hover:not(:disabled){background:rgba(255,255,255,.08);}
-  .btn:active:not(:disabled){transform:scale(.97);}
-  .btn:disabled{opacity:.35;cursor:not-allowed;}
-  .btn.primary{border-color:rgba(53,224,161,.5);background:rgba(53,224,161,.12);color:var(--accent);}
-  .btn.blue{border-color:rgba(74,158,255,.5);background:rgba(74,158,255,.10);color:#8ec5ff;}
-  .btn.playing{border-color:rgba(255,90,106,.55);background:rgba(255,90,106,.15);color:#ff8b96;}
-  .btn.warn{border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.10);color:var(--warn);}
-
-  .row{display:flex;gap:8px;flex-wrap:wrap;}
-  .row .btn{flex:1 1 0;}
-
-  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .toggle{
-    position:relative;width:44px;height:26px;flex:none;border-radius:99px;
-    border:1px solid var(--line);background:rgba(255,255,255,.06);
-    cursor:pointer;transition:.22s;padding:0;
-  }
-  .toggle::after{
-    content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-    background:#8a94a5;transition:.22s;
-  }
-  .toggle.on{background:rgba(53,224,161,.2);border-color:rgba(53,224,161,.5);}
-  .toggle.on::after{left:20px;background:var(--accent);box-shadow:0 0 12px rgba(53,224,161,.7);}
-
-  .meter-row{display:flex;align-items:center;gap:11px;}
-  .meter-label{width:82px;flex:none;font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
-  .meter{flex:1;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.055);box-shadow:inset 0 1px 2px rgba(0,0,0,.5);}
-  .fill{height:100%;width:0%;border-radius:99px;transition:width .05s;}
-  .fill.in{background:linear-gradient(90deg,#2a6cff,#22d3ee);}
-  .fill.out{background:linear-gradient(90deg,#0f9d6b,#35e0a1);}
-  .fill.sum{background:linear-gradient(90deg,#b03a4a,#ff5a6a);}
-
-  .info{
-    font-size:11.5px;color:var(--dim);line-height:1.55;
-    padding:10px 12px;border-radius:10px;
-    background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.20);
-    color:#a8c8ea;
-  }
-  .info b{color:#cfe4ff;font-weight:650;}
-  .info.warn{
-    background:rgba(255,176,32,.07);border-color:rgba(255,176,32,.24);color:#e8c987;
-  }
-  .info.warn b{color:#ffd79a;}
-
-  details.help{border-radius:14px;border:1px solid var(--line);background:var(--panel);overflow:hidden;}
-  details.help summary{
-    cursor:pointer;list-style:none;padding:13px 15px;
-    font-size:11.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  details.help summary::-webkit-details-marker{display:none;}
-  details.help summary::after{content:"+";font-size:16px;color:var(--dim);}
-  details.help[open] summary::after{content:"–";}
-  .help-body{padding:0 15px 15px;font-size:12.5px;line-height:1.6;color:#b9c2d0;}
-  .help-body h4{margin:13px 0 5px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);}
-  .help-body h4:first-child{margin-top:3px;}
-  .help-body ol,.help-body ul{margin:0;padding-left:18px;}
-  .help-body li{margin-bottom:4px;}
-  .help-body code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px;font-size:11.5px;color:#dbe3ee;}
-
-  .hidden{display:none !important;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pay 50 Birr</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f766e, #134e4a);
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .3);
+      text-align: center;
+    }
+    h1 { margin: 0 0 6px; font-size: 22px; color: #0f172a; }
+    .sub { margin: 0 0 28px; color: #64748b; font-size: 14px; }
+    .amount {
+      font-size: 46px;
+      font-weight: 800;
+      color: #0f766e;
+      margin-bottom: 4px;
+      letter-spacing: -1px;
+    }
+    .amount small { font-size: 20px; font-weight: 600; }
+    .label { color: #94a3b8; font-size: 13px; margin-bottom: 28px; }
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      background: #0f766e;
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    button:hover:not(:disabled) { background: #115e59; }
+    button:active:not(:disabled) { transform: scale(.98); }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .status {
+      margin-top: 18px;
+      font-size: 14px;
+      min-height: 20px;
+      color: #64748b;
+    }
+    .status.error { color: #dc2626; }
+    .secure {
+      margin-top: 22px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
+  <div class="card">
+    <h1>Complete your payment</h1>
+    <p class="sub">Secure checkout</p>
 
-  <header>
-    <div class="brand"><span class="dot" id="dot"></span> Anti-Noise Forge</div>
-    <div class="status" id="status">No file</div>
-  </header>
+    <div class="amount">50 <small>ETB</small></div>
+    <div class="label">Total amount due</div>
 
-  <!-- 1. UPLOAD -->
-  <section class="card">
-    <div class="card-head">
-      <h2>1 · Source audio</h2>
-      <span class="pill" id="fileInfo">—</span>
-    </div>
+    <button id="payBtn">Pay 50 Birr</button>
+    <div class="status" id="status"></div>
 
-    <label class="drop" id="drop">
-      <input type="file" id="file" accept="audio/*">
-      <span class="drop-icon">🎵</span>
-      <div class="drop-title">Drop an audio file, or click to browse</div>
-      <div class="drop-sub">WAV · MP3 · M4A · OGG · FLAC — anything the browser can decode</div>
-    </label>
+    <div class="secure">🔒 Secured by encrypted payment gateway</div>
+  </div>
 
-    <div class="row">
-      <button class="btn" id="recBtn">🎙 Or record 5s from mic</button>
-    </div>
+  <script>
+    const payBtn = document.getElementById('payBtn');
+    const statusEl = document.getElementById('status');
 
-    <div class="info" id="srcHint">
-      Upload a recording of the sound you want to cancel — a fan, AC hum, a drone, a room tone. Anything steady works best.
-    </div>
-  </section>
-
-  <!-- 2. WAVEFORM -->
-  <section class="card hidden" id="waveCard">
-    <div class="card-head">
-      <h2>Waveform</h2>
-      <span class="pill" id="durPill">0.00 s</span>
-    </div>
-    <div class="wave-wrap">
-      <canvas id="wave" width="900" height="260"></canvas>
-      <div class="playhead" id="playhead"></div>
-    </div>
-    <div class="wave-legend">
-      <span><span class="sw blue"></span> Original</span>
-      <span><span class="sw green"></span> Anti-noise (inverted)</span>
-    </div>
-  </section>
-
-  <!-- 3. CONTROLS -->
-  <section class="card hidden" id="ctrlCard">
-    <h2>2 · Shape the anti-noise</h2>
-
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Polarity</span>
-        <span class="ctrl-val" id="polVal">Inverted (−)</span>
-      </div>
-      <div class="toggle-row" style="margin-top:2px;">
-        <div class="ctrl-hint" style="margin:0;max-width:74%;">Flip to <b>Normal (+)</b> to hear the source unchanged. Cancellation only works with <b>Inverted (−)</b>.</div>
-        <button class="toggle on" id="polToggle" aria-label="Toggle polarity"></button>
-      </div>
-    </div>
-
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Depth (gain)</span>
-        <span class="ctrl-val" id="gainVal">100%</span>
-      </div>
-      <input type="range" id="gain" min="0" max="200" value="100" step="1">
-      <div class="ctrl-hint">How loud the anti-noise is. Real cancellation needs it to match the source's amplitude exactly.</div>
-    </div>
-
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Time offset (phase)</span>
-        <span class="ctrl-val" id="offVal">0.00 ms</span>
-      </div>
-      <input type="range" id="offset" min="-500" max="500" value="0" step="1">
-      <div class="ctrl-hint">Slide the anti-noise in time. If it sounds echoey or hollow, nudge this. Sub-millisecond alignment is what makes the difference.</div>
-    </div>
-
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Band — low cut</span>
-        <span class="ctrl-val" id="hpVal">20 Hz</span>
-      </div>
-      <input type="range" id="highpass" min="20" max="2000" value="20" step="1">
-      <div class="ctrl-hint">Raise to leave bass alone. Cancellation works best in the low band — most ambient rumble lives here.</div>
-    </div>
-
-    <div class="ctrl">
-      <div class="ctrl-head">
-        <span class="ctrl-name">Band — high cut</span>
-        <span class="ctrl-val" id="lpVal">20000 Hz</span>
-      </div>
-      <input type="range" id="lowpass" min="200" max="20000" value="20000" step="1">
-      <div class="ctrl-hint">Lower to focus cancellation on rumble only. Above ~1 kHz phase error kills cancellation anyway, so trimming is often cleaner.</div>
-    </div>
-
-    <div class="row">
-      <button class="btn" id="presetRumble">Rumble preset</button>
-      <button class="btn" id="presetFull">Full-band preset</button>
-      <button class="btn" id="presetReset">Reset</button>
-    </div>
-  </section>
-
-  <!-- 4. PREVIEW / PROVE -->
-  <section class="card hidden" id="actionCard">
-    <h2>3 · Hear it &amp; prove it</h2>
-
-    <div class="row">
-      <button class="btn blue" id="playOrig">▶ Original</button>
-      <button class="btn primary" id="playInv">▶ Anti-noise</button>
-    </div>
-    <div class="row">
-      <button class="btn" id="playMirror">L = original · R = anti-noise</button>
-    </div>
-    <div class="row">
-      <button class="btn warn" id="playSum">⚡ Prove cancellation</button>
-    </div>
-
-    <div class="meter-row" style="margin-top:6px;">
-      <span class="meter-label">Source</span>
-      <div class="meter"><div class="fill in" id="mIn"></div></div>
-    </div>
-    <div class="meter-row">
-      <span class="meter-label">Anti-noise</span>
-      <div class="meter"><div class="fill out" id="mInv"></div></div>
-    </div>
-    <div class="meter-row">
-      <span class="meter-label">Sum (result)</span>
-      <div class="meter"><div class="fill sum" id="mSum"></div></div>
-    </div>
-
-    <div class="info warn" id="proofInfo">
-      <b>Prove cancellation</b> fades the anti-noise in on top of the original through the same output. If they're phase-locked, you hear the sound <i>disappear</i> into near-silence. That's what a perfect ANC chip does inside your earbud.
-    </div>
-
-    <div class="row" style="margin-top:4px;">
-      <button class="btn primary" id="exportBtn">⬇ Download anti-noise WAV</button>
-    </div>
-    <div class="row">
-      <button class="btn" id="loopBtn">🔁 Loop anti-noise in background</button>
-    </div>
-  </section>
-
-  <!-- 5. HELP -->
-  <details class="help">
-    <summary>What this does, and what it can't</summary>
-    <div class="help-body">
-
-      <h4>What it does</h4>
-      <p>You give it a sound. It computes the phase-inverted copy — a waveform where every peak becomes a trough and every trough a peak. If you play both at once through the same output, they sum to zero. That's active noise cancellation, in its purest form.</p>
-
-      <h4>What it can't do</h4>
-      <p>It <b>cannot cancel live environmental noise in real time.</b> To cancel a sound as it happens, the anti-noise has to reach your ear within about 0.05 ms of the noise. A browser runs at 10–50 ms, and Bluetooth earbuds add another 150–300 ms. That is thousands of times too slow. Real ANC chips in your earbuds do this in dedicated silicon sitting centimetres from your eardrum.</p>
-
-      <h4>So what is it actually good for?</h4>
-      <ul>
-        <li><b>Understanding cancellation.</b> Upload any clip, hit <b>Prove cancellation</b>, and hear what phase inversion really sounds like. That alone is worth trying.</li>
-        <li><b>Generating anti-noise WAVs.</b> Export the inverted file and use it in a DAW, a looping player, or an audio tool where you can sync it to a source.</li>
-        <li><b>Cancelling steady loops.</b> If you have a recording of a fan, a hum, a drone — the inverted file, played from the same playback device at the same moment the original starts, will partially cancel it.</li>
-      </ul>
-
-      <h4>How to get the best cancellation</h4>
-      <ol>
-        <li>Upload a <b>clean recording of the sound you want to kill</b> — as little extra noise as possible.</li>
-        <li>Use <b>Rumble preset</b> if it's a fan, AC, engine, or hum. Leave <b>Full-band</b> only for wideband material.</li>
-        <li>Nudge <b>Depth</b> so the anti-noise matches the source volume — usually 100%.</li>
-        <li>Nudge <b>Time offset</b> in tiny steps. If cancellation is perfect, <b>Prove cancellation</b> yields near-silence. If it yields a hollow doubling, you're a fraction of a millisecond off.</li>
-        <li>Export the WAV. Use it wherever you can play it back sample-aligned to the source.</li>
-      </ol>
-
-      <h4>Why a perfect upload still won't silence your room</h4>
-      <p>Because the recording captured the sound at a <i>previous</i> moment in a <i>particular</i> place. By the time you play the inverse, the room has moved on. Waves have already hit your ear. Physics wins.</p>
-    </div>
-  </details>
-
-</div>
-
-<script>
-(function(){
-  'use strict';
-  const $ = (id) => document.getElementById(id);
-  const el = {
-    dot:$('dot'), status:$('status'), fileInfo:$('fileInfo'),
-    drop:$('drop'), file:$('file'), recBtn:$('recBtn'), srcHint:$('srcHint'),
-    waveCard:$('waveCard'), wave:$('wave'), durPill:$('durPill'), playhead:$('playhead'),
-    ctrlCard:$('ctrlCard'), actionCard:$('actionCard'),
-    polToggle:$('polToggle'), polVal:$('polVal'),
-    gain:$('gain'), gainVal:$('gainVal'),
-    offset:$('offset'), offVal:$('offVal'),
-    highpass:$('highpass'), hpVal:$('hpVal'),
-    lowpass:$('lowpass'), lpVal:$('lpVal'),
-    presetRumble:$('presetRumble'), presetFull:$('presetFull'), presetReset:$('presetReset'),
-    playOrig:$('playOrig'), playInv:$('playInv'), playMirror:$('playMirror'),
-    playSum:$('playSum'), exportBtn:$('exportBtn'), loopBtn:$('loopBtn'),
-    mIn:$('mIn'), mInv:$('mInv'), mSum:$('mSum'), proofInfo:$('proofInfo')
-  };
-
-  let ctx = null;
-  let originalBuffer = null;
-  let processedBuffer = null;
-  let previewNodes = [];
-  let playheadRaf = 0;
-  let playStartTime = 0;
-  let playDuration = 0;
-  let meterRaf = 0;
-  let analyserIn = null, analyserInv = null, analyserSum = null;
-  let meterBufferIn = null, meterBufferInv = null, meterBufferSum = null;
-  let recording = false, recStream = null, recChunks = [], recNode = null;
-  let playingLoop = null;
-
-  /* ---------- status ---------- */
-  function setStatus(text, cls){
-    el.status.textContent = text;
-    el.status.className = 'status' + (cls ? ' ' + cls : '');
-    el.dot.classList.toggle('on', cls === 'on');
-  }
-
-  /* ---------- audio context ---------- */
-  function ensureCtx(){
-    if (ctx) return ctx;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    ctx = new AC({ latencyHint: 'interactive' });
-    return ctx;
-  }
-
-  /* ---------- one-pole filters (fast, no ringing) ---------- */
-  function lowpass(data, sr, cutoff){
-    if (cutoff >= sr/2 - 100) return data;
-    const rc = 1 / (2*Math.PI*cutoff);
-    const dt = 1 / sr;
-    const a = dt / (rc + dt);
-    const out = new Float32Array(data.length);
-    let prev = data[0];
-    for (let i=0;i<data.length;i++){
-      prev = prev + a * (data[i] - prev);
-      out[i] = prev;
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', isError);
     }
-    return out;
-  }
-  function highpass(data, sr, cutoff){
-    if (cutoff <= 20) return data;
-    const rc = 1 / (2*Math.PI*cutoff);
-    const dt = 1 / sr;
-    const a = rc / (rc + dt);
-    const out = new Float32Array(data.length);
-    let prevIn = data[0], prevOut = 0;
-    for (let i=0;i<data.length;i++){
-      const y = a * (prevOut + data[i] - prevIn);
-      out[i] = y;
-      prevIn = data[i];
-      prevOut = y;
-    }
-    return out;
-  }
 
-  /* ---------- process buffer ---------- */
-  function processBuffer(buffer, opts){
-    const sr = buffer.sampleRate;
-    const chs = buffer.numberOfChannels;
-    const len = buffer.length;
-    const result = ctx.createBuffer(chs, len, sr);
+    payBtn.addEventListener('click', async () => {
+      payBtn.disabled = true;
+      payBtn.textContent = 'Processing…';
+      setStatus('Creating your payment…');
 
-    const offsetSamples = Math.round(opts.offsetMs/1000 * sr);
-    const g = (opts.inverted ? -1 : 1) * opts.gain;
+      try {
+        const res = await fetch('/api/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 50, currency: 'ETB' })
+        });
 
-    for (let ch=0; ch<chs; ch++){
-      let d = buffer.getChannelData(ch);
-      // copy
-      d = new Float32Array(d);
-      // band
-      d = highpass(d, sr, opts.highpass);
-      d = lowpass(d, sr, opts.lowpass);
-      // gain + invert + offset
-      const out = new Float32Array(len);
-      if (offsetSamples === 0){
-        for (let i=0;i<len;i++) out[i] = d[i] * g;
-      } else {
-        for (let i=0;i<len;i++){
-          const src = i - offsetSamples;
-          if (src >= 0 && src < len) out[i] = d[src] * g;
-          else out[i] = 0;
+        const data = await res.json();
+
+        if (!res.ok || !data.checkout_url) {
+          throw new Error(data.error?.message || data.message || 'Could not start payment.');
         }
+
+        setStatus('Redirecting to secure checkout…');
+        window.location.href = data.checkout_url;
+
+      } catch (err) {
+        setStatus(err.message || 'Something went wrong.', true);
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay 50 Birr';
       }
-      result.copyToChannel(out, ch);
-    }
-    return result;
-  }
-
-  function rebuild(){
-    if (!originalBuffer) return;
-    const opts = readOpts();
-    processedBuffer = processBuffer(originalBuffer, opts);
-    drawWave();
-    updatePills();
-    // restart any active preview to reflect new settings
-    // (don't auto-restart to keep it simple — user can press play again)
-  }
-
-  function readOpts(){
-    return {
-      inverted: el.polToggle.classList.contains('on'),
-      gain: parseInt(el.gain.value,10) / 100,
-      offsetMs: parseInt(el.offset.value,10) / 100,  /* −5..+5 ms in 0.01 ms steps */
-      highpass: parseInt(el.highpass.value,10),
-      lowpass: parseInt(el.lowpass.value,10)
-    };
-  }
-
-  function updatePills(){
-    if (!originalBuffer) return;
-    const dur = originalBuffer.duration;
-    el.durPill.textContent = dur.toFixed(2) + ' s';
-    el.fileInfo.textContent = originalBuffer.numberOfChannels + 'ch · ' + originalBuffer.sampleRate + ' Hz';
-  }
-
-  /* ---------- waveform draw ---------- */
-  function drawWave(){
-    if (!originalBuffer) return;
-    const c = el.wave;
-    const dpr = window.devicePixelRatio || 1;
-    const cssW = c.clientWidth;
-    const cssH = 130;
-    c.width = Math.floor(cssW * dpr);
-    c.height = Math.floor(cssH * dpr);
-    const w = c.width, h = c.height;
-    const g = c.getContext('2d');
-    g.clearRect(0,0,w,h);
-
-    // grid
-    g.strokeStyle = 'rgba(255,255,255,.04)';
-    g.lineWidth = 1;
-    for (let i=1;i<8;i++){
-      g.beginPath();
-      g.moveTo(0, h*i/8);
-      g.lineTo(w, h*i/8);
-      g.stroke();
-    }
-    // zero line
-    g.strokeStyle = 'rgba(255,255,255,.10)';
-    g.beginPath();
-    g.moveTo(0, h/2);
-    g.lineTo(w, h/2);
-    g.stroke();
-
-    const src = originalBuffer.getChannelData(0);
-    const inv = processedBuffer ? processedBuffer.getChannelData(0) : null;
-    const len = src.length;
-    const step = Math.max(1, Math.floor(len / w));
-
-    // Original — blue fill
-    g.fillStyle = 'rgba(74,158,255,.55)';
-    for (let x=0; x<w; x++){
-      let mn = 1, mx = -1;
-      const start = x*step;
-      const end = Math.min(start+step, len);
-      for (let i=start; i<end; i++){
-        const v = src[i];
-        if (v < mn) mn = v;
-        if (v > mx) mx = v;
-      }
-      const y0 = h/2 - mx*h/2*0.9;
-      const y1 = h/2 - mn*h/2*0.9;
-      g.fillRect(x, y0, 1, Math.max(1, y1-y0));
-    }
-
-    // Inverted — green outline overlay
-    if (inv){
-      g.strokeStyle = 'rgba(53,224,161,.85)';
-      g.lineWidth = Math.max(1, dpr*1.1);
-      g.beginPath();
-      for (let x=0; x<w; x++){
-        let mn = 1, mx = -1;
-        const start = x*step;
-        const end = Math.min(start+step, len);
-        for (let i=start; i<end; i++){
-          const v = inv[i];
-          if (v < mn) mn = v;
-          if (v > mx) mx = v;
-        }
-        const yTop = h/2 - mx*h/2*0.9;
-        const yBot = h/2 - mn*h/2*0.9;
-        if (x === 0) g.moveTo(x+0.5, yTop);
-        else g.lineTo(x+0.5, yTop);
-        // also draw bottom by jumping
-      }
-      g.stroke();
-
-      // second pass for the lower envelope
-      g.beginPath();
-      for (let x=0; x<w; x++){
-        let mn = 1;
-        const start = x*step;
-        const end = Math.min(start+step, len);
-        for (let i=start; i<end; i++){
-          const v = inv[i];
-          if (v < mn) mn = v;
-        }
-        const yBot = h/2 - mn*h/2*0.9;
-        if (x === 0) g.moveTo(x+0.5, yBot);
-        else g.lineTo(x+0.5, yBot);
-      }
-      g.stroke();
-    }
-  }
-
-  window.addEventListener('resize', () => { if (originalBuffer) drawWave(); });
-
-  /* ---------- playhead ---------- */
-  function startPlayhead(duration){
-    playDuration = duration;
-    playStartTime = performance.now();
-    el.playhead.classList.add('on');
-    cancelAnimationFrame(playheadRaf);
-    tickPlayhead();
-  }
-  function tickPlayhead(){
-    playheadRaf = requestAnimationFrame(tickPlayhead);
-    const t = (performance.now() - playStartTime) / 1000;
-    const p = Math.min(1, t / playDuration);
-    el.playhead.style.left = (p * 100) + '%';
-    if (p >= 1) stopPlayhead();
-  }
-  function stopPlayhead(){
-    cancelAnimationFrame(playheadRaf);
-    el.playhead.classList.remove('on');
-    el.playhead.style.left = '0%';
-    setPlayButtons(false);
-  }
-  function setPlayButtons(playing){
-    [el.playOrig, el.playInv, el.playMirror, el.playSum].forEach(b => {
-      b.classList.toggle('playing', playing);
     });
-  }
-
-  /* ---------- playback ---------- */
-  function stopAll(){
-    previewNodes.forEach(n => { try { n.stop(); } catch(e){} });
-    previewNodes = [];
-    stopMeters();
-    stopPlayhead();
-  }
-
-  function playBuffer(buffer, destinationOpts){
-    if (!buffer) return;
-    const now = ctx.currentTime + 0.05;
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.connect(ctx.destination);
-    src.start(now);
-    previewNodes.push(src);
-    return src;
-  }
-
-  function playOriginalOnly(){
-    stopAll();
-    if (!originalBuffer) return;
-    setPlayButtons(true);
-    playBuffer(originalBuffer);
-    startPlayhead(originalBuffer.duration);
-  }
-
-  function playInvertedOnly(){
-    stopAll();
-    if (!processedBuffer) return;
-    setPlayButtons(true);
-    playBuffer(processedBuffer);
-    startPlayhead(processedBuffer.duration);
-  }
-
-  function playMirror(){
-    stopAll();
-    if (!originalBuffer || !processedBuffer) return;
-    setPlayButtons(true);
-
-    const merger = ctx.createChannelMerger(2);
-    merger.connect(ctx.destination);
-    const now = ctx.currentTime + 0.05;
-
-    const a = ctx.createBufferSource();
-    a.buffer = originalBuffer;
-    a.connect(merger, 0, 0); // left
-    a.start(now);
-    previewNodes.push(a);
-
-    const b = ctx.createBufferSource();
-    b.buffer = processedBuffer;
-    b.connect(merger, 0, 1); // right
-    b.start(now);
-    previewNodes.push(b);
-
-    startPlayhead(Math.max(originalBuffer.duration, processedBuffer.duration));
-  }
-
-  function playSumDemo(){
-    stopAll();
-    if (!originalBuffer || !processedBuffer) return;
-    setPlayButtons(true);
-
-    const now = ctx.currentTime + 0.05;
-    const dur = Math.min(originalBuffer.duration, processedBuffer.duration);
-
-    // Original
-    const a = ctx.createBufferSource();
-    a.buffer = originalBuffer;
-    const aGain = ctx.createGain();
-    aGain.gain.value = 1;
-    a.connect(aGain).connect(ctx.destination);
-    a.start(now);
-    previewNodes.push(a);
-
-    // Anti-noise — fades in over 1s
-    const b = ctx.createBufferSource();
-    b.buffer = processedBuffer;
-    const bGain = ctx.createGain();
-    bGain.gain.setValueAtTime(0, now);
-    bGain.gain.linearRampToValueAtTime(1, now + 1.0);
-    b.connect(bGain).connect(ctx.destination);
-    b.start(now);
-    previewNodes.push(b);
-
-    startMeters(aGain, bGain);
-    startPlayhead(dur);
-  }
-
-  function playLoop(){
-    stopAll();
-    if (!processedBuffer) return;
-    const src = ctx.createBufferSource();
-    src.buffer = processedBuffer;
-    src.loop = true;
-    src.connect(ctx.destination);
-    src.start();
-    previewNodes.push(src);
-    playingLoop = src;
-    el.loopBtn.classList.add('playing');
-    el.loopBtn.textContent = '⏹ Stop loop';
-  }
-  function stopLoop(){
-    if (playingLoop){
-      try { playingLoop.stop(); } catch(e){}
-      playingLoop = null;
-    }
-    el.loopBtn.classList.remove('playing');
-    el.loopBtn.textContent = '🔁 Loop anti-noise in background';
-  }
-
-  /* ---------- meters ---------- */
-  function startMeters(srcNode, invNode){
-    stopMeters();
-    analyserIn = ctx.createAnalyser();
-    analyserInv = ctx.createAnalyser();
-    analyserSum = ctx.createAnalyser();
-    analyserIn.fftSize = 512;
-    analyserInv.fftSize = 512;
-    analyserSum.fftSize = 512;
-    meterBufferIn = new Float32Array(analyserIn.fftSize);
-    meterBufferInv = new Float32Array(analyserInv.fftSize);
-    meterBufferSum = new Float32Array(analyserSum.fftSize);
-
-    srcNode.connect(analyserIn);
-    invNode.connect(analyserInv);
-
-    // summed analyser — reconnect from both
-    srcNode.connect(analyserSum);
-    invNode.connect(analyserSum);
-
-    tickMeters();
-  }
-  function stopMeters(){
-    cancelAnimationFrame(meterRaf);
-    analyserIn = analyserInv = analyserSum = null;
-    [el.mIn, el.mInv, el.mSum].forEach(e => e.style.width = '0%');
-  }
-  function rms(buf){
-    let s = 0;
-    for (let i=0;i<buf.length;i++) s += buf[i]*buf[i];
-    return Math.sqrt(s / buf.length);
-  }
-  function dbPct(db){ return Math.max(0, Math.min(100, (db + 60) / 60 * 100)); }
-  function tickMeters(){
-    meterRaf = requestAnimationFrame(tickMeters);
-    if (!analyserIn) return;
-    analyserIn.getFloatTimeDomainData(meterBufferIn);
-    analyserInv.getFloatTimeDomainData(meterBufferInv);
-    analyserSum.getFloatTimeDomainData(meterBufferSum);
-    el.mIn.style.width  = dbPct(20*Math.log10(rms(meterBufferIn)  + 1e-8)) + '%';
-    el.mInv.style.width = dbPct(20*Math.log10(rms(meterBufferInv) + 1e-8)) + '%';
-    el.mSum.style.width = dbPct(20*Math.log10(rms(meterBufferSum) + 1e-8)) + '%';
-  }
-
-  /* ---------- WAV export ---------- */
-  function bufferToWav(buffer){
-    const chs = buffer.numberOfChannels;
-    const sr = buffer.sampleRate;
-    const len = buffer.length;
-    const bytesPerSample = 2;
-    const blockAlign = chs * bytesPerSample;
-    const byteRate = sr * blockAlign;
-    const dataSize = len * blockAlign;
-    const totalSize = 44 + dataSize;
-
-    const ab = new ArrayBuffer(totalSize);
-    const view = new DataView(ab);
-    let off = 0;
-    const wStr = s => { for (let i=0;i<s.length;i++) view.setUint8(off++, s.charCodeAt(i)); };
-    const wU32 = v => { view.setUint32(off, v, true); off += 4; };
-    const wU16 = v => { view.setUint16(off, v, true); off += 2; };
-
-    wStr('RIFF'); wU32(36 + dataSize); wStr('WAVE');
-    wStr('fmt '); wU32(16); wU16(1); wU16(chs); wU32(sr);
-    wU32(byteRate); wU16(blockAlign); wU16(16);
-    wStr('data'); wU32(dataSize);
-
-    const chans = [];
-    for (let c=0;c<chs;c++) chans.push(buffer.getChannelData(c));
-    for (let i=0;i<len;i++){
-      for (let c=0;c<chs;c++){
-        let s = Math.max(-1, Math.min(1, chans[c][i]));
-        s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        view.setInt16(off, s, true);
-        off += 2;
-      }
-    }
-    return new Blob([ab], { type: 'audio/wav' });
-  }
-
-  /* ---------- file load ---------- */
-  async function loadFile(file){
-    ensureCtx();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    setStatus('Decoding…', 'busy');
-    try {
-      const ab = await file.arrayBuffer();
-      originalBuffer = await ctx.decodeAudioData(ab);
-    } catch (e) {
-      console.error(e);
-      setStatus('Cannot decode', 'err');
-      el.srcHint.textContent = 'That file could not be decoded. Try WAV or MP3.';
-      return;
-    }
-    finishLoad(file.name);
-  }
-
-  function finishLoad(name){
-    el.fileInfo.textContent = '—';
-    el.drop.classList.add('hidden');
-    el.recBtn.parentElement.classList.add('hidden');
-    el.waveCard.classList.remove('hidden');
-    el.ctrlCard.classList.remove('hidden');
-    el.actionCard.classList.remove('hidden');
-    el.srcHint.textContent = 'Loaded: ' + name + '  ·  tweak the anti-noise below, then hit "Prove cancellation".';
-    rebuild();
-    setStatus('Ready', 'on');
-  }
-
-  /* ---------- record from mic ---------- */
-  async function startRecord(){
-    if (recording) return;
-    setStatus('Recording 5s…', 'busy');
-    el.recBtn.disabled = true;
-    try {
-      recStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-      });
-    } catch (e) {
-      setStatus('Mic denied', 'err');
-      el.recBtn.disabled = false;
-      return;
-    }
-    ensureCtx();
-    if (ctx.state === 'suspended') await ctx.resume();
-
-    recChunks = [];
-    const source = ctx.createMediaStreamSource(recStream);
-    recNode = ctx.createScriptProcessor(4096, 1, 1);
-    recNode.onaudioprocess = (e) => {
-      const ch = e.inputBuffer.getChannelData(0);
-      recChunks.push(new Float32Array(ch));
-    };
-    source.connect(recNode);
-    recNode.connect(ctx.destination);
-    recording = true;
-    el.recBtn.textContent = '⏺ Recording…';
-
-    setTimeout(() => {
-      finishRecord();
-    }, 5000);
-  }
-
-  function finishRecord(){
-    if (!recording) return;
-    recording = false;
-    try { recStream.getTracks().forEach(t => t.stop()); } catch(e){}
-    try { recNode.disconnect(); } catch(e){}
-    recStream = null; recNode = null;
-    el.recBtn.disabled = false;
-    el.recBtn.textContent = '🎙 Or record 5s from mic';
-
-    const sr = ctx.sampleRate;
-    let total = 0;
-    recChunks.forEach(c => total += c.length);
-    const merged = new Float32Array(total);
-    let off = 0;
-    recChunks.forEach(c => { merged.set(c, off); off += c.length; });
-
-    originalBuffer = ctx.createBuffer(1, merged.length, sr);
-    originalBuffer.copyToChannel(merged, 0);
-    finishLoad('mic recording (' + (total/sr).toFixed(1) + ' s)');
-  }
-
-  /* ---------- wiring ---------- */
-  el.drop.addEventListener('click', () => el.file.click());
-  el.drop.addEventListener('dragover', (e) => { e.preventDefault(); el.drop.classList.add('over'); });
-  el.drop.addEventListener('dragleave', () => el.drop.classList.remove('over'));
-  el.drop.addEventListener('drop', (e) => {
-    e.preventDefault();
-    el.drop.classList.remove('over');
-    const f = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) loadFile(f);
-  });
-  el.file.addEventListener('change', () => {
-    const f = el.file.files && el.file.files[0];
-    if (f) loadFile(f);
-  });
-  el.recBtn.addEventListener('click', startRecord);
-
-  // controls
-  el.polToggle.addEventListener('click', () => {
-    el.polToggle.classList.toggle('on');
-    const on = el.polToggle.classList.contains('on');
-    el.polVal.textContent = on ? 'Inverted (−)' : 'Normal (+)';
-    rebuild();
-  });
-  el.gain.addEventListener('input', () => {
-    el.gainVal.textContent = el.gain.value + '%';
-    rebuild();
-  });
-  el.offset.addEventListener('input', () => {
-    el.offVal.textContent = (el.offset.value/100).toFixed(2) + ' ms';
-    rebuild();
-  });
-  el.highpass.addEventListener('input', () => {
-    el.hpVal.textContent = el.highpass.value + ' Hz';
-    rebuild();
-  });
-  el.lowpass.addEventListener('input', () => {
-    el.lpVal.textContent = el.lowpass.value + ' Hz';
-    rebuild();
-  });
-
-  // presets
-  el.presetRumble.addEventListener('click', () => {
-    el.highpass.value = 30; el.hpVal.textContent = '30 Hz';
-    el.lowpass.value = 500; el.lpVal.textContent = '500 Hz';
-    el.gain.value = 100; el.gainVal.textContent = '100%';
-    el.offset.value = 0; el.offVal.textContent = '0.00 ms';
-    el.polToggle.classList.add('on'); el.polVal.textContent = 'Inverted (−)';
-    rebuild();
-  });
-  el.presetFull.addEventListener('click', () => {
-    el.highpass.value = 20; el.hpVal.textContent = '20 Hz';
-    el.lowpass.value = 20000; el.lpVal.textContent = '20000 Hz';
-    el.gain.value = 100; el.gainVal.textContent = '100%';
-    el.offset.value = 0; el.offVal.textContent = '0.00 ms';
-    el.polToggle.classList.add('on'); el.polVal.textContent = 'Inverted (−)';
-    rebuild();
-  });
-  el.presetReset.addEventListener('click', () => {
-    el.highpass.value = 20; el.hpVal.textContent = '20 Hz';
-    el.lowpass.value = 20000; el.lpVal.textContent = '20000 Hz';
-    el.gain.value = 100; el.gainVal.textContent = '100%';
-    el.offset.value = 0; el.offVal.textContent = '0.00 ms';
-    el.polToggle.classList.add('on'); el.polVal.textContent = 'Inverted (−)';
-    rebuild();
-  });
-
-  // playback
-  el.playOrig.addEventListener('click', playOriginalOnly);
-  el.playInv.addEventListener('click', playInvertedOnly);
-  el.playMirror.addEventListener('click', playMirror);
-  el.playSum.addEventListener('click', playSumDemo);
-  el.loopBtn.addEventListener('click', () => {
-    if (playingLoop) stopLoop();
-    else { ensureCtx().resume(); playLoop(); }
-  });
-
-  // export
-  el.exportBtn.addEventListener('click', () => {
-    if (!processedBuffer) return;
-    const blob = bufferToWav(processedBuffer);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'anti-noise.wav';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  });
-
-  // init labels
-  el.gainVal.textContent = el.gain.value + '%';
-  el.offVal.textContent = '0.00 ms';
-  el.hpVal.textContent = el.highpass.value + ' Hz';
-  el.lpVal.textContent = el.lowpass.value + ' Hz';
-
-  window.addEventListener('pagehide', () => { stopAll(); stopLoop(); });
-  window.addEventListener('beforeunload', () => { stopAll(); stopLoop(); });
-
-  if (!window.isSecureContext) setStatus('Needs HTTPS', 'err');
-})();
-</script>
+  </script>
 </body>
 </html>
