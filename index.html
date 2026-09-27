@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07080c">
-<title>EarPod ANC — Anti-Noise Engine</title>
+<title>EarPod ANC — Phase-Aligned Anti-Noise</title>
 <style>
   :root{
     --bg:#07080c;
     --panel:rgba(255,255,255,.045);
+    --panel2:rgba(255,255,255,.028);
     --line:rgba(255,255,255,.09);
     --txt:#e9edf4;
     --dim:#7d8798;
@@ -17,9 +18,7 @@
     --warn:#ffb020;
     --danger:#ff5a6a;
   }
-
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{
     margin:0;
@@ -29,195 +28,174 @@
       var(--bg);
     color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    display:flex;
-    justify-content:center;
-    padding:22px 16px 40px;
+    display:flex;justify-content:center;
+    padding:20px 14px 44px;
     min-height:100%;
+    -webkit-font-smoothing:antialiased;
   }
+  .app{width:100%;max-width:470px;display:flex;flex-direction:column;gap:16px;}
 
-  .app{width:100%; max-width:460px; display:flex; flex-direction:column; gap:20px;}
-
-  /* ---------- header ---------- */
-  header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
-  .brand{
-    display:flex; align-items:center; gap:9px;
-    font-size:15px; font-weight:650; letter-spacing:.02em;
-  }
-  .dot{
-    width:9px; height:9px; border-radius:50%;
-    background:var(--dim);
-    box-shadow:0 0 0 0 rgba(53,224,161,0);
-    transition:.3s;
-  }
-  .dot.on{background:var(--accent); box-shadow:0 0 12px 2px rgba(53,224,161,.6);}
-
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;letter-spacing:.02em;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);transition:.3s;}
+  .dot.on{background:var(--accent);box-shadow:0 0 12px 2px rgba(53,224,161,.6);}
   .status{
-    font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
-    color:var(--dim);
-    padding:5px 11px; border-radius:999px;
-    border:1px solid var(--line); background:var(--panel);
-    transition:.25s;
+    font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--dim);padding:5px 11px;border-radius:999px;
+    border:1px solid var(--line);background:var(--panel);transition:.25s;
   }
-  .status.on{color:var(--accent); border-color:rgba(53,224,161,.35); background:rgba(53,224,161,.08);}
-  .status.err{color:var(--danger); border-color:rgba(255,90,106,.35); background:rgba(255,90,106,.08);}
-  .status.busy{color:var(--warn); border-color:rgba(255,176,32,.35); background:rgba(255,176,32,.08);}
+  .status.on{color:var(--accent);border-color:rgba(53,224,161,.35);background:rgba(53,224,161,.08);}
+  .status.err{color:var(--danger);border-color:rgba(255,90,106,.35);background:rgba(255,90,106,.08);}
+  .status.busy{color:var(--warn);border-color:rgba(255,176,32,.35);background:rgba(255,176,32,.08);}
 
-  /* ---------- power button ---------- */
-  .power-wrap{display:flex; justify-content:center; padding:6px 0 2px;}
-
+  .power-wrap{display:flex;justify-content:center;padding:4px 0 0;}
   .power{
-    position:relative;
-    width:158px; height:158px; border-radius:50%;
+    position:relative;width:150px;height:150px;border-radius:50%;
     border:1px solid var(--line);
     background:
       radial-gradient(circle at 50% 32%, rgba(255,255,255,.09), transparent 62%),
       linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
-    color:var(--txt);
-    cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    color:var(--txt);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
     font-family:inherit;
     transition:transform .18s cubic-bezier(.2,.9,.3,1.3), box-shadow .35s, border-color .35s;
     box-shadow:0 18px 50px -18px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
     user-select:none;
   }
   .power:active{transform:scale(.955);}
-
   .power.on{
     border-color:rgba(53,224,161,.55);
-    box-shadow:
-      0 0 0 1px rgba(53,224,161,.14),
-      0 0 70px -6px rgba(53,224,161,.42),
-      0 0 140px -20px rgba(34,211,238,.35),
-      inset 0 1px 0 rgba(255,255,255,.09);
+    box-shadow:0 0 0 1px rgba(53,224,161,.14), 0 0 70px -6px rgba(53,224,161,.42),
+      0 0 140px -20px rgba(34,211,238,.35), inset 0 1px 0 rgba(255,255,255,.09);
   }
   .power.on::after{
-    content:"";
-    position:absolute; inset:-1px; border-radius:50%;
-    border:1px solid rgba(53,224,161,.5);
-    animation:ripple 2.6s ease-out infinite;
-    pointer-events:none;
+    content:"";position:absolute;inset:-1px;border-radius:50%;
+    border:1px solid rgba(53,224,161,.5);animation:ripple 2.6s ease-out infinite;pointer-events:none;
   }
-  @keyframes ripple{
-    0%{transform:scale(1); opacity:.7;}
-    100%{transform:scale(1.42); opacity:0;}
-  }
-
-  .power-icon{font-size:40px; line-height:1; transition:.3s; opacity:.85;}
-  .power.on .power-icon{
-    color:var(--accent);
-    opacity:1;
-    filter:drop-shadow(0 0 14px rgba(53,224,161,.75));
-  }
-  .power-label{
-    font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
-    color:var(--dim); transition:.3s;
-  }
+  @keyframes ripple{0%{transform:scale(1);opacity:.7;}100%{transform:scale(1.42);opacity:0;}}
+  .power-icon{font-size:38px;line-height:1;transition:.3s;opacity:.85;}
+  .power.on .power-icon{color:var(--accent);opacity:1;filter:drop-shadow(0 0 14px rgba(53,224,161,.75));}
+  .power-label{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);transition:.3s;}
   .power.on .power-label{color:var(--accent);}
 
-  /* ---------- meters ---------- */
   .meters{
-    display:flex; flex-direction:column; gap:11px;
-    padding:15px 16px;
-    border-radius:16px;
-    border:1px solid var(--line);
-    background:var(--panel);
+    display:flex;flex-direction:column;gap:10px;
+    padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);
   }
-  .meter-row{display:flex; align-items:center; gap:11px;}
-  .meter-label{
-    width:78px; flex:none;
-    font-size:10.5px; font-weight:650; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--dim);
-  }
-  .meter{
-    flex:1; height:8px; border-radius:99px; overflow:hidden;
-    background:rgba(255,255,255,.055);
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.5);
-  }
-  .fill{height:100%; width:0%; border-radius:99px; will-change:width;}
+  .meter-row{display:flex;align-items:center;gap:11px;}
+  .meter-label{width:80px;flex:none;font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+  .meter{flex:1;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.055);box-shadow:inset 0 1px 2px rgba(0,0,0,.5);}
+  .fill{height:100%;width:0%;border-radius:99px;}
   .fill.in{background:linear-gradient(90deg,#2a6cff,#22d3ee);}
   .fill.out{background:linear-gradient(90deg,#0f9d6b,#35e0a1);}
-  .guard{
-    font-size:10px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--danger); opacity:0; transition:.2s; font-weight:700; text-align:center;
-  }
+  .guard{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);opacity:0;transition:.2s;font-weight:700;text-align:center;}
   .guard.show{opacity:1;}
 
-  /* ---------- controls ---------- */
-  .controls{
-    display:flex; flex-direction:column; gap:19px;
-    padding:18px 16px;
-    border-radius:16px;
-    border:1px solid var(--line);
-    background:var(--panel);
+  .card{
+    display:flex;flex-direction:column;gap:13px;
+    padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);
   }
-  .ctrl{display:flex; flex-direction:column; gap:9px;}
-  .ctrl-head{display:flex; align-items:baseline; justify-content:space-between;}
-  .ctrl-name{font-size:12.5px; font-weight:600; letter-spacing:.02em;}
-  .ctrl-val{
-    font-size:11.5px; font-variant-numeric:tabular-nums;
-    color:var(--accent); font-weight:650;
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .card h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+  .pill{
+    font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
+    color:var(--accent);background:rgba(53,224,161,.09);
+    border:1px solid rgba(53,224,161,.25);
+    padding:3px 9px;border-radius:999px;letter-spacing:.02em;
   }
-  .ctrl-hint{font-size:10.5px; color:var(--dim); line-height:1.45; margin-top:-2px;}
+  .hint{margin:0;font-size:11.5px;line-height:1.5;color:var(--dim);}
+
+  .row{display:flex;align-items:center;gap:10px;}
+  .row2{display:flex;gap:9px;flex-wrap:wrap;}
+
+  .step{
+    width:34px;height:34px;flex:none;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+    font-size:17px;line-height:1;font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:.15s;user-select:none;
+  }
+  .step:hover{background:rgba(255,255,255,.09);}
+  .step:active{transform:scale(.9);}
+
+  .btn{
+    flex:1;min-width:120px;
+    padding:10px 14px;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+    font-size:12px;font-weight:650;font-family:inherit;letter-spacing:.03em;
+    cursor:pointer;transition:.15s;user-select:none;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .btn:hover{background:rgba(255,255,255,.08);}
+  .btn:active{transform:scale(.97);}
+  .btn.on{
+    border-color:rgba(53,224,161,.5);
+    background:rgba(53,224,161,.12);
+    color:var(--accent);
+  }
+  .btn.warn{
+    border-color:rgba(255,90,106,.5);
+    background:rgba(255,90,106,.12);
+    color:var(--danger);
+    animation:pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.62;}}
 
   input[type=range]{
-    -webkit-appearance:none; appearance:none;
-    width:100%; height:22px; background:transparent; cursor:pointer; margin:0;
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:22px;background:transparent;cursor:pointer;margin:0;
   }
-  input[type=range]::-webkit-slider-runnable-track{
-    height:5px; border-radius:99px;
-    background:rgba(255,255,255,.10);
-  }
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
   input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; appearance:none;
-    width:19px; height:19px; margin-top:-7px; border-radius:50%;
-    background:#eafff7;
-    border:1px solid rgba(53,224,161,.8);
+    -webkit-appearance:none;appearance:none;
+    width:19px;height:19px;margin-top:-7px;border-radius:50%;
+    background:#eafff7;border:1px solid rgba(53,224,161,.8);
     box-shadow:0 0 14px rgba(53,224,161,.5), 0 2px 6px rgba(0,0,0,.5);
     transition:transform .12s;
   }
   input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18);}
-  input[type=range]::-moz-range-track{
-    height:5px; border-radius:99px; background:rgba(255,255,255,.10);
-  }
+  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);}
   input[type=range]::-moz-range-thumb{
-    width:18px; height:18px; border-radius:50%;
-    background:#eafff7; border:1px solid rgba(53,224,161,.8);
+    width:18px;height:18px;border-radius:50%;
+    background:#eafff7;border:1px solid rgba(53,224,161,.8);
     box-shadow:0 0 14px rgba(53,224,161,.5);
   }
 
-  /* ---------- help ---------- */
-  details.help{
-    border-radius:16px; border:1px solid var(--line);
-    background:var(--panel); overflow:hidden;
+  .ctrl{display:flex;flex-direction:column;gap:8px;}
+  .ctrl-head{display:flex;align-items:baseline;justify-content:space-between;}
+  .ctrl-name{font-size:12.5px;font-weight:600;letter-spacing:.02em;}
+  .ctrl-val{font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:650;}
+  .ctrl-hint{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:-2px;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .toggle{
+    position:relative;width:44px;height:26px;flex:none;border-radius:99px;
+    border:1px solid var(--line);background:rgba(255,255,255,.06);
+    cursor:pointer;transition:.22s;padding:0;
   }
+  .toggle::after{
+    content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:#8a94a5;transition:.22s;
+  }
+  .toggle.on{background:rgba(53,224,161,.2);border-color:rgba(53,224,161,.5);}
+  .toggle.on::after{left:20px;background:var(--accent);box-shadow:0 0 12px rgba(53,224,161,.7);}
+
+  details.help{border-radius:16px;border:1px solid var(--line);background:var(--panel);overflow:hidden;}
   details.help summary{
-    cursor:pointer; list-style:none;
-    padding:14px 16px;
-    font-size:12px; font-weight:650; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--dim);
-    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer;list-style:none;padding:14px 16px;
+    font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;justify-content:space-between;
   }
   details.help summary::-webkit-details-marker{display:none;}
-  details.help summary::after{content:"+"; font-size:16px; color:var(--dim);}
+  details.help summary::after{content:"+";font-size:16px;color:var(--dim);}
   details.help[open] summary::after{content:"–";}
-  .help-body{
-    padding:0 16px 16px; font-size:12.5px; line-height:1.62; color:#b9c2d0;
-  }
-  .help-body h4{
-    margin:14px 0 6px; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
-    color:var(--accent);
-  }
+  .help-body{padding:0 16px 16px;font-size:12.5px;line-height:1.62;color:#b9c2d0;}
+  .help-body h4{margin:14px 0 6px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);}
   .help-body h4:first-child{margin-top:4px;}
-  .help-body ol,.help-body ul{margin:0; padding-left:18px;}
+  .help-body ol,.help-body ul{margin:0;padding-left:18px;}
   .help-body li{margin-bottom:5px;}
-  .help-body code{
-    background:rgba(255,255,255,.07); padding:1px 5px; border-radius:5px;
-    font-size:11.5px; color:#dbe3ee;
-  }
-  .lat{
-    margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
-    font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;
-  }
+  .help-body code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px;font-size:11.5px;color:#dbe3ee;}
+  .lat{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -247,7 +225,26 @@
     <div class="guard" id="guard">⚠ feedback guard active</div>
   </div>
 
-  <div class="controls">
+  <section class="card">
+    <div class="card-head">
+      <h2>Phase alignment</h2>
+      <span class="pill" id="delayReadout">0.00 ms</span>
+    </div>
+    <p class="hint">The anti-noise must land at your ear <b>at the same instant</b> as the noise. Browser latency makes it arrive late — this slides the reference back so the two line up. Sweep until the rumble goes quietest. If it sounds hollow or louder, you've gone past the sweet spot.</p>
+    <div class="row">
+      <button class="step" id="stepDown" aria-label="Decrease delay">−</button>
+      <input type="range" id="delay" min="0" max="800" value="0" step="1">
+      <button class="step" id="stepUp" aria-label="Increase delay">+</button>
+    </div>
+    <div class="row2">
+      <button class="btn on" id="polarity">Polarity: − (inverted)</button>
+      <button class="btn" id="autoAlign">Auto-align</button>
+    </div>
+    <p class="hint" id="predictHint">Fine-tune with the − / + buttons. Keyboard ← → also works (hold Shift for coarse).</p>
+  </section>
+
+  <section class="card">
+    <h2>Cancellation</h2>
     <div class="ctrl">
       <div class="ctrl-head">
         <span class="ctrl-name">Depth</span>
@@ -256,16 +253,33 @@
       <input type="range" id="depth" min="0" max="100" value="80" step="1">
       <div class="ctrl-hint">How hard the anti-noise pushes. Push until the rumble drops, then stop — past the sweet spot it gets hollow and louder.</div>
     </div>
-
     <div class="ctrl">
       <div class="ctrl-head">
         <span class="ctrl-name">Tone / band</span>
-        <span class="ctrl-val" id="toneVal">900 Hz</span>
+        <span class="ctrl-val" id="toneVal">950 Hz</span>
       </div>
-      <input type="range" id="tone" min="0" max="100" value="42" step="1">
-      <div class="ctrl-hint">Low = pure rumble killing. High = wider band, but phase error makes it sound phasey.</div>
+      <input type="range" id="tone" min="0" max="100" value="50" step="1">
+      <div class="ctrl-hint">Low = pure rumble killing. High = wider band, but phase error above ~1 kHz makes it sound phasey and can add noise.</div>
     </div>
+  </section>
 
+  <section class="card">
+    <h2>Advanced</h2>
+    <div class="toggle-row">
+      <div>
+        <div class="ctrl-name">Predictive mode</div>
+        <div class="ctrl-hint" style="margin-top:3px">Learns steady tones (fans, engines) and forecasts them forward, beating the latency. Auto-fades out when the noise is too random to predict.</div>
+      </div>
+      <button class="toggle on" id="predict" aria-label="Toggle predictive mode"></button>
+    </div>
+    <div class="ctrl" id="lookaheadCtrl">
+      <div class="ctrl-head">
+        <span class="ctrl-name">Look-ahead</span>
+        <span class="ctrl-val" id="lookaheadVal">8.0 ms</span>
+      </div>
+      <input type="range" id="lookahead" min="0" max="800" value="160" step="1">
+      <div class="ctrl-hint">How far ahead the predictor forecasts. Set it to roughly your browser's round-trip latency (see readout below).</div>
+    </div>
     <div class="ctrl">
       <div class="ctrl-head">
         <span class="ctrl-name">Masking bed</span>
@@ -274,17 +288,26 @@
       <input type="range" id="mask" min="0" max="100" value="0" step="1">
       <div class="ctrl-hint">Soft brown noise that hides what ANC physically can't cancel (voices, clatter). Off by default.</div>
     </div>
-  </div>
+  </section>
 
   <details class="help">
     <summary>How to actually make it work</summary>
     <div class="help-body">
-      <h4>Setup that matters</h4>
+      <h4>The setup that matters</h4>
       <ol>
         <li><b>Connect your earbuds first</b>, then open this page. The browser picks the audio output at start.</li>
-        <li><b>Put the mic near the noise</b> — phone on the desk next to the fan / AC / window, not in your hand next to your ear. The mic samples the noise, this page inverts it, and your earbuds fire the anti-noise into your ear where it meets the real noise.</li>
+        <li><b>Put the mic closer to the noise than your ears are.</b> Phone on the desk next to the fan / AC / window, not in your hand next to your head. The mic samples the noise, this page inverts it, and the earbuds fire the anti-noise into your ear where it meets the real noise.</li>
         <li>Keep the page open and the screen on. Tap the button once and allow microphone access.</li>
       </ol>
+
+      <h4>Why timing was off, and what changed</h4>
+      <ul>
+        <li>The old version used a biquad lowpass, which adds <b>frequency-dependent group delay</b> — it smeared the phase and made the anti-noise arrive at the wrong time for different frequencies. That's gone; it's a linear-phase FIR now, so all frequencies are delayed by the same fixed amount.</li>
+        <li>The whole chain is now an <b>AudioWorklet</b> — no graph node scheduling jitter, no hidden buffering, sample-accurate.</li>
+        <li>The browser is asked for the <b>smallest possible buffer</b> (<code>latencyHint: 0</code>).</li>
+        <li>You now have a <b>delay line</b> (0–40 ms, 0.05 ms steps) to manually compensate the remaining latency, plus a <b>polarity flip</b> for when the error is near 180°.</li>
+        <li><b>Predictive mode</b> trains an LMS filter on the mic signal and forecasts it forward by your chosen look-ahead — this is the only way to beat latency for steady, periodic noise, because it literally predicts the future waveform.</li>
+      </ul>
 
       <h4>What it can and can't kill</h4>
       <ul>
@@ -292,18 +315,17 @@
         <li><b>Won't kill:</b> speech, clatter, doors, sharp transients. That's physics, not a bug in the code.</li>
       </ul>
 
-      <h4>Tuning it</h4>
-      <ul>
-        <li>Start with <b>Depth 80%</b>, <b>Tone ~900 Hz</b>.</li>
-        <li>If the room gets <i>louder</i> or hollow, you've pushed Depth too far — back it down to ~60%.</li>
-        <li>For pure rumble (plane, fan), drop Tone to 20–30%.</li>
-      </ul>
-
-      <h4>Why it isn't perfect</h4>
-      <p>Real ANC chips run at ~0.05 ms latency. A browser runs at 10–30 ms. Sound has to arrive at your ear exactly out of phase; above roughly 1 kHz the timing error is bigger than a wavelength, so the "anti-noise" starts <i>adding</i> sound instead. That's what the Tone slider is for — it keeps the anti-noise in the band where cancellation actually works.</p>
+      <h4>Order of tuning</h4>
+      <ol>
+        <li>Start with <b>Depth 80%</b>, <b>Tone ~950 Hz</b>, <b>delay 0</b>, <b>polarity −</b>.</li>
+        <li>Tap <b>Auto-align</b>. It sweeps the delay up and down. Tap <b>LOCK</b> the moment the rumble drops away.</li>
+        <li>Fine-tune with the − / + buttons and the arrow keys.</li>
+        <li>If the low rumble is steady (fan, engine), turn <b>Predictive mode</b> on and set <b>Look-ahead</b> to roughly the round-trip latency shown at the bottom of this panel.</li>
+        <li>If the room gets <i>louder</i> or hollow, you've pushed Depth or delay too far — back it down.</li>
+      </ol>
 
       <h4>If you hear howling</h4>
-      <p>Lower Depth, or move the mic away from the earbuds. The feedback guard will auto-duck the output if it detects a runaway loop, but don't rely on it.</p>
+      <p>Lower Depth, or move the mic away from the earbuds. The feedback guard auto-ducks the output if it detects a runaway loop, but don't rely on it.</p>
 
       <div class="lat" id="lat">Latency readout: —</div>
     </div>
@@ -311,274 +333,652 @@
 
 </div>
 
+<!-- ============================================================
+     AudioWorklet processor — must not contain the string "</script>"
+     ============================================================ -->
+<script id="anc-worklet" type="javascript/worker">
+class ANCProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      { name: 'depth',     defaultValue: 0.8, minValue: 0, maxValue: 2,     automationRate: 'k-rate' },
+      { name: 'delay',     defaultValue: 0,   minValue: 0, maxValue: 96000, automationRate: 'k-rate' },
+      { name: 'polarity',  defaultValue: -1,  minValue: -1, maxValue: 1,    automationRate: 'k-rate' },
+      { name: 'mask',      defaultValue: 0,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' },
+      { name: 'predict',   defaultValue: 0,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' },
+      { name: 'lookahead', defaultValue: 0,   minValue: 0, maxValue: 96000, automationRate: 'k-rate' },
+      { name: 'enabled',   defaultValue: 1,   minValue: 0, maxValue: 1,     automationRate: 'k-rate' }
+    ];
+  }
+
+  constructor() {
+    super();
+    this.sr = sampleRate;
+
+    /* ---- linear-phase FIR (fixed length, only coefficients change) ---- */
+    this.firLen = 33;
+    this.fir = new Float32Array(this.firLen);
+    this.fir[(this.firLen - 1) >> 1] = 1;          // default: passthrough
+    this.firHist = new Float32Array(this.firLen);
+    this.firIdx = 0;
+
+    /* ---- fractional delay line (2 s max) ---- */
+    this.dlLen = Math.ceil(this.sr * 2);
+    this.dl = new Float32Array(this.dlLen);
+    this.dlWrite = 0;
+
+    /* ---- masking noise state ---- */
+    this.brown = 0;
+
+    /* ---- feedback guard ---- */
+    this.env = 0;
+    this.gain = 1;
+
+    /* ---- NLMS predictor ---- */
+    this.lmsLen = 192;
+    this.lmsW = new Float32Array(this.lmsLen);
+    this.lmsBufLen = 4096;
+    this.lmsBuf = new Float32Array(this.lmsBufLen);
+    this.lmsIdx = 0;
+    this.lmsMu = 0.30;
+    this.lmsLeak = 0.99995;
+    this.powEnv = 1e-6;
+    this.errPow = 0;
+    this.sigPow = 0;
+    this.conf = 0;
+
+    /* ---- metering ---- */
+    this.sumIn = 0;
+    this.sumOut = 0;
+    this.meterCount = 0;
+    this.meterBlocks = 8;
+
+    this.port.onmessage = (ev) => {
+      const d = ev.data;
+      if (!d) return;
+      if (d.type === 'fir' && d.coeffs) {
+        const c = new Float32Array(d.coeffs);
+        if (c.length === this.firLen) this.fir = c;
+      } else if (d.type === 'reset') {
+        this.lmsW.fill(0);
+        this.powEnv = 1e-6;
+        this.errPow = 0;
+        this.sigPow = 0;
+        this.conf = 0;
+      }
+    };
+  }
+
+  process(inputs, outputs, params) {
+    const output = outputs[0];
+    if (!output || output.length === 0) return true;
+
+    const out = output[0];
+    const n = out.length;
+    const input = inputs[0];
+    const inCh = (input && input.length > 0 && input[0]) ? input[0] : null;
+
+    const depth     = params.depth[0];
+    const dlyRaw    = params.delay[0];
+    const polarity  = params.polarity[0];
+    const maskAmt   = params.mask[0];
+    const predictOn = params.predict[0] > 0.5;
+    const laRaw     = params.lookahead[0];
+    const enabled   = params.enabled[0] > 0.5;
+
+    if (!enabled) {
+      for (let i = 0; i < n; i++) out[i] = 0;
+      return true;
+    }
+
+    /* local bindings for speed */
+    const firLen   = this.firLen;
+    const fir      = this.fir;
+    const firHist  = this.firHist;
+    const dl       = this.dl;
+    const dlLen    = this.dlLen;
+    const dly      = Math.min(Math.max(0, dlyRaw), dlLen - 2);
+
+    const lmsLen     = this.lmsLen;
+    const lmsW       = this.lmsW;
+    const lmsBuf     = this.lmsBuf;
+    const lmsBufLen  = this.lmsBufLen;
+    const la         = Math.min(Math.max(0, Math.round(laRaw)), lmsBufLen - lmsLen - 2);
+    const lmsMu      = this.lmsMu;
+    const lmsLeak    = this.lmsLeak;
+
+    for (let i = 0; i < n; i++) {
+      const x = inCh ? inCh[i] : 0;
+
+      /* ---------- 1. linear-phase FIR lowpass ---------- */
+      firHist[this.firIdx] = x;
+      let y = 0;
+      let fi = this.firIdx;
+      for (let k = 0; k < firLen; k++) {
+        y += fir[k] * firHist[fi];
+        fi--;
+        if (fi < 0) fi = firLen - 1;
+      }
+      this.firIdx++;
+      if (this.firIdx >= firLen) this.firIdx = 0;
+
+      /* ---------- 2. fractional delay line ---------- */
+      dl[this.dlWrite] = y;
+      let rp = this.dlWrite - dly;
+      while (rp < 0) rp += dlLen;
+      const i0 = Math.floor(rp);
+      const frac = rp - i0;
+      const i0m = i0 % dlLen;
+      const i1m = (i0m + 1) % dlLen;
+      const delayed = dl[i0m] + (dl[i1m] - dl[i0m]) * frac;
+      this.dlWrite++;
+      if (this.dlWrite >= dlLen) this.dlWrite = 0;
+
+      /* ---------- 3. predictive branch ---------- */
+      let advanced = delayed;
+      if (predictOn) {
+        lmsBuf[this.lmsIdx] = y;
+
+        /* --- train: predict y(t) from y(t-la-1 ... t-la-L) --- */
+        let pred = 0;
+        let bi = this.lmsIdx - la - 1;
+        bi %= lmsBufLen;
+        if (bi < 0) bi += lmsBufLen;
+        for (let k = 0; k < lmsLen; k++) {
+          pred += lmsW[k] * lmsBuf[bi];
+          bi--;
+          if (bi < 0) bi += lmsBufLen;
+        }
+        const err = y - pred;
+
+        /* global-power normalised step (cheap, stable) */
+        this.powEnv = this.powEnv * 0.999 + y * y * 0.001;
+        const step = lmsMu / (this.powEnv * lmsLen + 1e-9);
+
+        /* update with leakage */
+        let bj = this.lmsIdx - la - 1;
+        bj %= lmsBufLen;
+        if (bj < 0) bj += lmsBufLen;
+        for (let k = 0; k < lmsLen; k++) {
+          lmsW[k] = (lmsW[k] + step * err * lmsBuf[bj]) * lmsLeak;
+          bj--;
+          if (bj < 0) bj += lmsBufLen;
+        }
+
+        /* confidence: how predictable is this signal? */
+        this.errPow = this.errPow * 0.999 + err * err * 0.001;
+        this.sigPow = this.sigPow * 0.999 + y * y * 0.001;
+        let c = 1 - this.errPow / (this.sigPow + 1e-9);
+        if (c < 0) c = 0; else if (c > 1) c = 1;
+        this.conf = this.conf * 0.99 + c * 0.01;
+
+        /* --- forecast y(t+la) from y(t-1 ... t-L) --- */
+        let ahead = 0;
+        let bk = this.lmsIdx - 1;
+        bk %= lmsBufLen;
+        if (bk < 0) bk += lmsBufLen;
+        for (let k = 0; k < lmsLen; k++) {
+          ahead += lmsW[k] * lmsBuf[bk];
+          bk--;
+          if (bk < 0) bk += lmsBufLen;
+        }
+
+        /* blend: confident → use forecast; unsure → fall back to direct */
+        advanced = ahead * this.conf + delayed * (1 - this.conf);
+
+        this.lmsIdx++;
+        if (this.lmsIdx >= lmsBufLen) this.lmsIdx = 0;
+      }
+
+      /* ---------- 4. invert + depth ---------- */
+      let sig = advanced * polarity * depth;
+
+      /* ---------- 5. feedback guard ---------- */
+      const a = sig < 0 ? -sig : sig;
+      this.env = a > this.env ? a : this.env * 0.9995;
+      if (this.env > 0.4) {
+        const target = 0.4 / this.env;
+        this.gain += (target - this.gain) * 0.02;
+      } else {
+        this.gain += (1 - this.gain) * 0.0005;
+      }
+      sig *= this.gain;
+
+      /* ---------- 6. masking bed ---------- */
+      if (maskAmt > 0) {
+        const white = Math.random() * 2 - 1;
+        this.brown = (this.brown + 0.02 * white) / 1.02;
+        sig += this.brown * 3.2 * maskAmt * 0.22;
+      }
+
+      /* ---------- 7. soft clip ---------- */
+      if (sig > 0.98) sig = 0.98;
+      else if (sig < -0.98) sig = -0.98;
+
+      out[i] = sig;
+
+      /* ---------- metering ---------- */
+      this.sumIn += x * x;
+      this.sumOut += sig * sig;
+      this.meterCount++;
+    }
+
+    if (this.meterCount >= this.meterBlocks * n) {
+      const rIn = Math.sqrt(this.sumIn / this.meterCount);
+      const rOut = Math.sqrt(this.sumOut / this.meterCount);
+      this.port.postMessage({
+        type: 'levels',
+        in: rIn,
+        out: rOut,
+        duck: this.gain,
+        conf: this.conf
+      });
+      this.sumIn = 0;
+      this.sumOut = 0;
+      this.meterCount = 0;
+    }
+
+    return true;
+  }
+}
+
+registerProcessor('anc-processor', ANCProcessor);
+</script>
+
 <script>
 (function () {
   'use strict';
 
-  const $ = id => document.getElementById(id);
-  const ui = {
+  const $ = (id) => document.getElementById(id);
+  const el = {
     power: $('power'), powerLabel: $('powerLabel'), dot: $('dot'), status: $('status'),
     inFill: $('inFill'), outFill: $('outFill'), guard: $('guard'),
     depth: $('depth'), depthVal: $('depthVal'),
     tone: $('tone'), toneVal: $('toneVal'),
     mask: $('mask'), maskVal: $('maskVal'),
+    delay: $('delay'), delayReadout: $('delayReadout'),
+    stepDown: $('stepDown'), stepUp: $('stepUp'),
+    polarity: $('polarity'),
+    autoAlign: $('autoAlign'),
+    predict: $('predict'), lookahead: $('lookahead'), lookaheadVal: $('lookaheadVal'),
+    predictHint: $('predictHint'),
     lat: $('lat')
   };
 
-  const TONE_MIN = 200, TONE_MAX = 8000;
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  /* ---------- audio state ---------- */
+  let ctx = null, stream = null, worklet = null;
+  let running = false;
+  let depthParam = null, delayParam = null, polarityParam = null,
+      maskParam = null, predictParam = null, lookaheadParam = null;
 
-  // ---- audio state ----
-  let ctx = null, stream = null;
-  let src = null, lp = null, inv = null, out = null;
-  let maskSrc = null, maskGain = null;
-  let anIn = null, anOut = null, bufIn = null, bufOut = null;
-  let raf = 0, running = false;
-  let duck = 1, duckTarget = 1;
+  let meterIn = 0, meterOut = 0, meterDuck = 1, meterConf = 0;
   let smoothIn = 0, smoothOut = 0;
+  let rafMeter = 0;
 
-  // ---- helpers ----
-  const toneHz = t => TONE_MIN * Math.pow(TONE_MAX / TONE_MIN, t);
-  const dbToPct = db => clamp((db + 62) / 62, 0, 1) * 100;
+  /* sweep */
+  let sweeping = false;
+  let sweepStart = 0;
+  let sweepRaf = 0;
+  const SWEEP_MAX_MS = 35;
+  const SWEEP_PERIOD = 16;   // seconds for one full up-down cycle
 
-  function rms(buf) {
-    let s = 0;
-    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
-    return Math.sqrt(s / buf.length);
-  }
+  /* linear-phase FIR: fixed 33 taps → group delay exactly 16 samples */
+  const FIR_TAPS = 33;
+  const FIR_GROUP_DELAY = (FIR_TAPS - 1) / 2;
+
+  /* ---------- helpers ---------- */
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const toneToHz = (t) => 150 * Math.pow(6000 / 150, t);
+  const hzToText = (hz) => hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz';
+  const dbToPct = (db) => clamp((db + 62) / 62, 0, 1) * 100;
 
   function setStatus(text, cls) {
-    ui.status.textContent = text;
-    ui.status.className = 'status' + (cls ? ' ' + cls : '');
+    el.status.textContent = text;
+    el.status.className = 'status' + (cls ? ' ' + cls : '');
   }
 
-  function makeBrownNoise(seconds) {
-    const len = Math.floor(ctx.sampleRate * seconds);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < len; i++) {
-      const white = Math.random() * 2 - 1;
-      last = (last + 0.02 * white) / 1.02;
-      d[i] = last * 3.2;
+  /* ---------- FIR design: windowed-sinc lowpass (Blackman) ---------- */
+  function designLowpass(cutoffHz, sr, N) {
+    const c = new Float32Array(N);
+    const fc = cutoffHz / sr;           // normalised 0..0.5
+    const M = N - 1;
+    let sum = 0;
+    for (let i = 0; i < N; i++) {
+      const k = i - M / 2;
+      let h;
+      if (Math.abs(k) < 1e-9) h = 2 * fc;
+      else h = Math.sin(2 * Math.PI * fc * k) / (Math.PI * k);
+      const w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / M) + 0.08 * Math.cos(4 * Math.PI * i / M);
+      h *= w;
+      c[i] = h;
+      sum += h;
     }
-    return buf;
+    for (let i = 0; i < N; i++) c[i] /= sum;
+    return c;
   }
 
-  // ---- parameter application ----
+  let firScheduled = false;
+  function scheduleFir() {
+    if (!worklet || firScheduled) return;
+    firScheduled = true;
+    requestAnimationFrame(() => {
+      firScheduled = false;
+      if (!worklet || !ctx) return;
+      const t = el.tone.value / 100;
+      const hz = toneToHz(t);
+      const coeffs = designLowpass(hz, ctx.sampleRate, FIR_TAPS);
+      worklet.port.postMessage({ type: 'fir', coeffs: Array.from(coeffs) });
+    });
+  }
+
+  /* ---------- parameter application ---------- */
   function applyDepth() {
-    const v = parseInt(ui.depth.value, 10) / 100;
-    ui.depthVal.textContent = Math.round(v * 100) + '%';
-    if (inv) inv.gain.setTargetAtTime(-v, ctx.currentTime, 0.02);
+    const v = el.depth.value / 100;
+    el.depthVal.textContent = Math.round(v * 100) + '%';
+    if (depthParam) depthParam.value = v;
   }
 
   function applyTone() {
-    const t = parseInt(ui.tone.value, 10) / 100;
-    const hz = toneHz(t);
-    ui.toneVal.textContent = hz >= 1000
-      ? (hz / 1000).toFixed(1) + ' kHz'
-      : Math.round(hz) + ' Hz';
-    if (lp) lp.frequency.setTargetAtTime(hz, ctx.currentTime, 0.02);
+    const t = el.tone.value / 100;
+    el.toneVal.textContent = hzToText(toneToHz(t));
+    scheduleFir();
   }
 
   function applyMask() {
-    const v = parseInt(ui.mask.value, 10) / 100;
-    ui.maskVal.textContent = v === 0 ? 'Off' : Math.round(v * 100) + '%';
-    if (maskGain) {
-      const g = Math.pow(v, 1.6) * 0.20;
-      maskGain.gain.setTargetAtTime(g, ctx.currentTime, 0.05);
+    const v = el.mask.value / 100;
+    el.maskVal.textContent = v === 0 ? 'Off' : Math.round(v * 100) + '%';
+    if (maskParam) maskParam.value = v;
+  }
+
+  function delayMsFromSlider() { return el.delay.value / 20; }   // 0..800 → 0..40 ms
+
+  function applyDelay() {
+    const ms = delayMsFromSlider();
+    el.delayReadout.textContent = ms.toFixed(2) + ' ms';
+    if (delayParam && ctx) {
+      /* subtract the FIR's own group delay so the readout is honest */
+      const samples = Math.max(0, ms * ctx.sampleRate / 1000 - FIR_GROUP_DELAY);
+      delayParam.value = samples;
     }
   }
 
-  // ---- meter + feedback guard loop ----
-  function loop() {
-    raf = requestAnimationFrame(loop);
-    if (!running) return;
-
-    anIn.getFloatTimeDomainData(bufIn);
-    anOut.getFloatTimeDomainData(bufOut);
-
-    const rIn = rms(bufIn);
-    const rOut = rms(bufOut);
-
-    const dbIn = 20 * Math.log10(rIn + 1e-8);
-    const dbOut = 20 * Math.log10(rOut + 1e-8);
-
-    // gentle ballistic smoothing
-    smoothIn += (dbToPct(dbIn) - smoothIn) * (dbToPct(dbIn) > smoothIn ? 0.55 : 0.10);
-    smoothOut += (dbToPct(dbOut) - smoothOut) * (dbToPct(dbOut) > smoothOut ? 0.55 : 0.10);
-
-    ui.inFill.style.width = smoothIn.toFixed(1) + '%';
-    ui.outFill.style.width = smoothOut.toFixed(1) + '%';
-
-    // feedback guard: if output RMS runs away, duck the whole chain
-    duckTarget = rOut > 0.30 ? 0.30 : 1;
-    const speed = duckTarget < duck ? 0.45 : 0.03;
-    duck += (duckTarget - duck) * speed;
-    if (out) out.gain.value = duck;
-
-    ui.guard.classList.toggle('show', duck < 0.85);
+  function applyPolarity() {
+    const inv = el.polarity.classList.contains('on');
+    el.polarity.textContent = inv ? 'Polarity: − (inverted)' : 'Polarity: + (normal)';
+    if (polarityParam) polarityParam.value = inv ? -1 : 1;
   }
 
-  // ---- start / stop ----
+  function applyPredict() {
+    const on = el.predict.classList.contains('on');
+    if (predictParam) predictParam.value = on ? 1 : 0;
+    if (!on && worklet) worklet.port.postMessage({ type: 'reset' });
+  }
+
+  function applyLookahead() {
+    const ms = el.lookahead.value / 20;   // 0..40 ms
+    el.lookaheadVal.textContent = ms.toFixed(1) + ' ms';
+    if (lookaheadParam && ctx) lookaheadParam.value = ms * ctx.sampleRate / 1000;
+  }
+
+  /* ---------- start / stop ---------- */
   async function start() {
     if (running) return;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus('Unsupported', 'err');
-      return;
+      setStatus('Unsupported', 'err'); return;
+    }
+    if (!window.AudioWorkletNode) {
+      setStatus('No AudioWorklet', 'err'); return;
     }
 
     setStatus('Starting…', 'busy');
-    ui.powerLabel.textContent = 'Starting';
+    el.powerLabel.textContent = 'Starting';
 
+    let localStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
+      localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: false,   // MUST be off — AEC fights the anti-noise
-          noiseSuppression: false,   // MUST be off — it removes the noise we want to invert
-          autoGainControl: false,    // MUST be off — AGC would pump the anti-noise
+          echoCancellation: false,   /* MUST be off — AEC fights the anti-noise */
+          noiseSuppression: false,   /* MUST be off — it removes the noise we invert */
+          autoGainControl: false,    /* MUST be off — AGC pumps the anti-noise */
           channelCount: 1
         },
         video: false
       });
     } catch (err) {
-      console.error(err);
-      const n = err && err.name;
-      if (n === 'NotAllowedError' || n === 'SecurityError') {
-        setStatus('Mic blocked', 'err');
-        ui.powerLabel.textContent = 'Mic blocked';
-      } else if (n === 'NotFoundError') {
-        setStatus('No mic', 'err');
-        ui.powerLabel.textContent = 'No mic found';
+      const nm = err && err.name;
+      if (nm === 'NotAllowedError' || nm === 'SecurityError') {
+        setStatus('Mic blocked', 'err'); el.powerLabel.textContent = 'Mic blocked';
+      } else if (nm === 'NotFoundError') {
+        setStatus('No mic', 'err'); el.powerLabel.textContent = 'No mic found';
       } else {
-        setStatus('Failed', 'err');
-        ui.powerLabel.textContent = 'Failed';
+        setStatus('Failed', 'err'); el.powerLabel.textContent = 'Failed';
       }
       return;
     }
+    stream = localStream;
 
     const AC = window.AudioContext || window.webkitAudioContext;
-    ctx = new AC({ latencyHint: 'interactive' });
+    /* latencyHint: 0 = ask for the smallest buffer the device will give us */
+    ctx = new AC({ latencyHint: 0 });
     if (ctx.state === 'suspended') await ctx.resume();
 
-    // --- graph ---
-    src = ctx.createMediaStreamSource(stream);
+    /* ---- load the worklet from the inline script block ---- */
+    const src = document.getElementById('anc-worklet').textContent;
+    const blob = new Blob([src], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    try {
+      await ctx.audioWorklet.addModule(url);
+    } catch (e) {
+      console.error(e);
+      setStatus('Worklet failed', 'err');
+      el.powerLabel.textContent = 'Failed';
+      try { ctx.close(); } catch (_) {}
+      ctx = null;
+      try { stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      stream = null;
+      return;
+    }
+    URL.revokeObjectURL(url);
 
-    lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.Q.value = 0.707;              // Butterworth, no resonant peak
+    const source = ctx.createMediaStreamSource(stream);
+    worklet = new AudioWorkletNode(ctx, 'anc-processor', {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      channelCount: 1,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'speakers'
+    });
 
-    inv = ctx.createGain();          // the phase inverter
-    inv.gain.value = -0.8;
+    const p = worklet.parameters;
+    depthParam = p.get('depth');
+    delayParam = p.get('delay');
+    polarityParam = p.get('polarity');
+    maskParam = p.get('mask');
+    predictParam = p.get('predict');
+    lookaheadParam = p.get('lookahead');
 
-    out = ctx.createGain();
-    out.gain.value = 1;
+    source.connect(worklet);
+    worklet.connect(ctx.destination);
 
-    src.connect(lp);
-    lp.connect(inv);
-    inv.connect(out);
-    out.connect(ctx.destination);
+    worklet.port.onmessage = (e) => {
+      const d = e.data;
+      if (d && d.type === 'levels') {
+        meterIn = d.in; meterOut = d.out; meterDuck = d.duck; meterConf = d.conf || 0;
+      }
+    };
 
-    // --- masking bed ---
-    maskSrc = ctx.createBufferSource();
-    maskSrc.buffer = makeBrownNoise(4);
-    maskSrc.loop = true;
-    maskGain = ctx.createGain();
-    maskGain.gain.value = 0;
-    maskSrc.connect(maskGain);
-    maskGain.connect(out);
-    maskSrc.start();
+    /* push every current UI value into the graph */
+    applyDepth(); applyTone(); applyMask(); applyDelay();
+    applyPolarity(); applyPredict(); applyLookahead();
 
-    // --- analysers ---
-    anIn = ctx.createAnalyser();
-    anIn.fftSize = 1024;
-    anIn.smoothingTimeConstant = 0;
-    src.connect(anIn);
-
-    anOut = ctx.createAnalyser();
-    anOut.fftSize = 1024;
-    anOut.smoothingTimeConstant = 0;
-    out.connect(anOut);
-
-    bufIn = new Float32Array(anIn.fftSize);
-    bufOut = new Float32Array(anOut.fftSize);
-
-    // --- apply current UI values ---
-    applyDepth();
-    applyTone();
-    applyMask();
-
-    // --- latency readout ---
+    /* latency readout — this is the number that matters for look-ahead */
     const base = (ctx.baseLatency || 0) * 1000;
     const outLat = (ctx.outputLatency || 0) * 1000;
-    ui.lat.textContent =
-      'Latency readout: ' + base.toFixed(1) + ' ms buffer + ' +
-      outLat.toFixed(1) + ' ms output ≈ ' + (base + outLat).toFixed(1) + ' ms total';
+    const total = base + outLat;
+    el.lat.textContent = 'Latency: ' + base.toFixed(1) + ' ms buffer + ' +
+      outLat.toFixed(1) + ' ms output = ' + total.toFixed(1) +
+      ' ms round-trip. Set Look-ahead to roughly this number.';
 
     running = true;
-    duck = 1;
-
-    ui.power.classList.add('on');
-    ui.power.setAttribute('aria-pressed', 'true');
-    ui.powerLabel.textContent = 'Engaged';
-    ui.dot.classList.add('on');
+    el.power.classList.add('on');
+    el.power.setAttribute('aria-pressed', 'true');
+    el.powerLabel.textContent = 'Engaged';
+    el.dot.classList.add('on');
     setStatus('Engaged', 'on');
 
-    cancelAnimationFrame(raf);
-    loop();
+    cancelAnimationFrame(rafMeter);
+    meterLoop();
   }
 
   function stop() {
     running = false;
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(rafMeter);
+    cancelAnimationFrame(sweepRaf);
+    sweeping = false;
 
-    try { if (maskSrc) maskSrc.stop(); } catch (e) {}
     try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {}
     try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch (e) {}
 
-    ctx = stream = src = lp = inv = out = maskSrc = maskGain = anIn = anOut = null;
-    bufIn = bufOut = null;
+    ctx = null; stream = null; worklet = null;
+    depthParam = delayParam = polarityParam = maskParam = predictParam = lookaheadParam = null;
 
-    ui.inFill.style.width = '0%';
-    ui.outFill.style.width = '0%';
-    ui.guard.classList.remove('show');
-    ui.power.classList.remove('on');
-    ui.power.setAttribute('aria-pressed', 'false');
-    ui.powerLabel.textContent = 'Tap to engage';
-    ui.dot.classList.remove('on');
+    el.inFill.style.width = '0%';
+    el.outFill.style.width = '0%';
+    el.guard.classList.remove('show');
+    el.power.classList.remove('on');
+    el.power.setAttribute('aria-pressed', 'false');
+    el.powerLabel.textContent = 'Tap to engage';
+    el.dot.classList.remove('on');
     setStatus('Idle');
+    el.autoAlign.textContent = 'Auto-align';
+    el.autoAlign.classList.remove('warn');
   }
 
-  // ---- wiring ----
-  ui.power.addEventListener('click', () => {
-    if (running) stop();
-    else start();
+  /* ---------- meter loop ---------- */
+  function meterLoop() {
+    rafMeter = requestAnimationFrame(meterLoop);
+    if (!running) return;
+
+    const dbIn = 20 * Math.log10(meterIn + 1e-8);
+    const dbOut = 20 * Math.log10(meterOut + 1e-8);
+    const pIn = dbToPct(dbIn);
+    const pOut = dbToPct(dbOut);
+
+    smoothIn += (pIn - smoothIn) * (pIn > smoothIn ? 0.5 : 0.08);
+    smoothOut += (pOut - smoothOut) * (pOut > smoothOut ? 0.5 : 0.08);
+
+    el.inFill.style.width = smoothIn.toFixed(1) + '%';
+    el.outFill.style.width = smoothOut.toFixed(1) + '%';
+    el.guard.classList.toggle('show', meterDuck < 0.85);
+  }
+
+  /* ---------- auto-align sweep ---------- */
+  function startSweep() {
+    if (!running) return;
+    sweeping = true;
+    sweepStart = performance.now();
+    el.autoAlign.textContent = '⏺ LOCK (tap when quietest)';
+    el.autoAlign.classList.add('warn');
+    cancelAnimationFrame(sweepRaf);
+    sweepStep();
+  }
+
+  function sweepStep() {
+    if (!sweeping) return;
+    sweepRaf = requestAnimationFrame(sweepStep);
+    const t = (performance.now() - sweepStart) / 1000;
+    const phase = (t % SWEEP_PERIOD) / SWEEP_PERIOD;
+    /* triangle wave 0 → 1 → 0 */
+    const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+    const ms = tri * SWEEP_MAX_MS;
+    el.delay.value = Math.round(ms * 20);
+    applyDelay();
+  }
+
+  function lockSweep() {
+    sweeping = false;
+    cancelAnimationFrame(sweepRaf);
+    el.autoAlign.textContent = 'Auto-align';
+    el.autoAlign.classList.remove('warn');
+  }
+
+  /* ---------- wiring ---------- */
+  el.power.addEventListener('click', () => { if (running) stop(); else start(); });
+
+  el.depth.addEventListener('input', applyDepth);
+  el.tone.addEventListener('input', applyTone);
+  el.mask.addEventListener('input', applyMask);
+
+  el.delay.addEventListener('input', () => {
+    if (sweeping) lockSweep();
+    applyDelay();
   });
 
-  ui.depth.addEventListener('input', applyDepth);
-  ui.tone.addEventListener('input', applyTone);
-  ui.mask.addEventListener('input', applyMask);
+  el.stepDown.addEventListener('click', () => {
+    if (sweeping) lockSweep();
+    el.delay.value = Math.max(0, parseInt(el.delay.value, 10) - 1);
+    applyDelay();
+  });
+  el.stepUp.addEventListener('click', () => {
+    if (sweeping) lockSweep();
+    el.delay.value = Math.min(800, parseInt(el.delay.value, 10) + 1);
+    applyDelay();
+  });
 
-  // init labels
-  applyDepthLabelOnly();
-  function applyDepthLabelOnly() {
-    ui.depthVal.textContent = ui.depth.value + '%';
-    const t = parseInt(ui.tone.value, 10) / 100;
-    const hz = toneHz(t);
-    ui.toneVal.textContent = hz >= 1000
-      ? (hz / 1000).toFixed(1) + ' kHz'
-      : Math.round(hz) + ' Hz';
-  }
+  el.polarity.addEventListener('click', () => {
+    el.polarity.classList.toggle('on');
+    applyPolarity();
+  });
 
-  // clean shutdown
+  el.autoAlign.addEventListener('click', () => {
+    if (!running) return;
+    if (sweeping) lockSweep(); else startSweep();
+  });
+
+  el.predict.addEventListener('click', () => {
+    el.predict.classList.toggle('on');
+    applyPredict();
+  });
+
+  el.lookahead.addEventListener('input', () => {
+    if (sweeping) lockSweep();
+    applyLookahead();
+  });
+
+  /* keyboard fine-tune */
+  window.addEventListener('keydown', (e) => {
+    if (!running) return;
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const step = e.shiftKey ? 10 : 1;
+      let v = parseInt(el.delay.value, 10) + (e.key === 'ArrowRight' ? step : -step);
+      el.delay.value = clamp(v, 0, 800);
+      if (sweeping) lockSweep();
+      applyDelay();
+      e.preventDefault();
+    } else if (e.key === 'p' || e.key === 'P') {
+      el.polarity.click();
+    } else if (e.key === ' ' || e.key === 'Spacebar') {
+      if (running) { if (sweeping) lockSweep(); else startSweep(); }
+      e.preventDefault();
+    }
+  });
+
+  /* ---------- init labels ---------- */
+  el.depthVal.textContent = el.depth.value + '%';
+  el.toneVal.textContent = hzToText(toneToHz(el.tone.value / 100));
+  el.maskVal.textContent = el.mask.value === '0' ? 'Off' : el.mask.value + '%';
+  el.delayReadout.textContent = '0.00 ms';
+  el.lookaheadVal.textContent = (el.lookahead.value / 20).toFixed(1) + ' ms';
+  applyPolarity();
+
+  /* ---------- cleanup ---------- */
   window.addEventListener('pagehide', () => { if (running) stop(); });
   window.addEventListener('beforeunload', () => { if (running) stop(); });
 
-  // warn if not a secure context
-  if (!window.isSecureContext) {
-    setStatus('Needs HTTPS', 'err');
-  }
+  if (!window.isSecureContext) setStatus('Needs HTTPS', 'err');
 })();
 </script>
 </body>
