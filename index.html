@@ -87,9 +87,8 @@
     const payBtn = document.getElementById('payBtn');
     const statusEl = document.getElementById('status');
 
-    // ⚠️ IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED BACKEND URL
-    // Example: 'https://my-backend.onrender.com/api/pay'
-    // DO NOT USE '/api/pay' because GitHub Pages cannot run backend code.
+    // ⚠️ CRITICAL: REPLACE THIS WITH YOUR DEPLOYED BACKEND URL FROM STEP 2
+    // Example: 'https://my-payment-app.onrender.com/api/pay'
     const API_URL = 'https://your-backend-server-url.com/api/pay'; 
 
     function setStatus(msg, isError = false) {
@@ -98,6 +97,13 @@
     }
 
     payBtn.addEventListener('click', async () => {
+      if (API_URL.includes('your-backend-server-url.com')) {
+        setStatus('Error: You forgot to replace the placeholder backend URL in the code.', true);
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay 50 Birr';
+        return;
+      }
+
       payBtn.disabled = true;
       payBtn.textContent = 'Processing…';
       setStatus('Creating your payment…');
@@ -109,11 +115,9 @@
           body: JSON.stringify({ amount: 50, currency: 'ETB' })
         });
 
-        // Check if the server returned HTML instead of JSON 
-        // This prevents the "Unexpected token '<'" error
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-          throw new Error(`Server error (${res.status}). Ensure your backend URL is correct and the server is running.`);
+          throw new Error(`Server error (${res.status}). Ensure your backend is running and URL is correct.`);
         }
 
         const data = await res.json();
